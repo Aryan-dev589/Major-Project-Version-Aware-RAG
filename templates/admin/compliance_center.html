@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Compliance Center — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Compliance Center</h1><p>Framework coverage, expired policies, violations, and audit readiness</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('compliance.compliance_report') }}" class="btn btn-primary" target="_blank">📄 Audit Readiness Report</a></div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card" style="text-align:center;padding:2rem">
+    <div class="card-label">Audit Readiness Score</div>
+    <div style="font-family:var(--font-serif);font-size:48px;font-weight:700;color:{% if readiness_score >= 80 %}var(--archive){% elif readiness_score >= 50 %}var(--amber){% else %}var(--red){% endif %}">{{ readiness_score }}<span style="font-size:20px;color:var(--faint)">/100</span></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Score breakdown</div>
+    {% for label, key in [('Framework coverage','framework_coverage'),('Mandatory ack rate','ack_score'),('No expired policies','expiry_score'),('Reviews on schedule','review_score'),('AI risk (inverse)','ai_risk_score')] %}
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;font-size:12.5px">
+      <span style="flex:1">{{ label }}</span>
+      <span class="text-mono">{{ sub_scores[key] }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ active_policy_count }}</div><div class="stat-label">Active policies</div></div>
+  <div class="stat-card {% if gaps %}amber{% endif %}"><div class="stat-val">{{ gaps|length }}</div><div class="stat-label">Framework gaps</div></div>
+  <div class="stat-card {% if expired_policies %}amber{% endif %}"><div class="stat-val">{{ expired_policies|length }}</div><div class="stat-label">Expired policies</div></div>
+  <div class="stat-card {% if violations %}amber{% endif %}"><div class="stat-val">{{ violations|length }}</div><div class="stat-label">Policies with violations</div></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Framework coverage</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Framework</th><th>Policies mapped</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for fd in framework_data %}
+        <tr>
+          <td class="td-title">{{ fd.framework.name }}</td>
+          <td class="td-mono">{{ fd.policy_count }}</td>
+          <td>{% if fd.gap %}<span class="pill pill-critical">No coverage</span>{% else %}<span class="pill pill-active">Covered</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if expired_policies %}
+<div class="card mb3">
+  <div class="card-label" style="color:var(--red)">Expired policies still marked Active</div>
+  {% for p in expired_policies %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:13px">
+    <a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}">{{ p.title }}</a>
+    <span class="text-mono" style="color:var(--red)">expired {{ p.expiry_date.strftime('%d %b %Y') }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if violations %}
+<div class="card mb3">
+  <div class="card-label">Mandatory policy violations — outstanding acknowledgements</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Policy</th><th>Acknowledged</th><th>Outstanding</th></tr></thead>
+      <tbody>
+        {% for v in violations %}
+        <tr>
+          <td><a href="{{ url_for('admin.policy_detail', policy_id=v.policy.id) }}">{{ v.policy.title }}</a></td>
+          <td class="td-mono">{{ v.acked }}/{{ v.total }}</td>
+          <td><span class="pill pill-high">{{ v.outstanding }} pending</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if ai_issues %}
+<div class="card mb3">
+  <div class="card-label">AI-flagged compliance issues <span class="text-faint" style="font-weight:400;font-size:11px">(from Policy AI Review — Module 3)</span></div>
+  {% for item in ai_issues %}
+  <div style="padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:13px">
+    <a href="{{ url_for('policy_ai.ai_assistant', policy_id=item.policy.id) }}">{{ item.policy.title }}</a>: {{ item.issue }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-label">Map policies to frameworks</div>
+  <div style="margin-top:.5rem">
+    {% for p in all_policies %}
+    <form method="POST" action="{{ url_for('compliance.update_frameworks', policy_id=p.id) }}" style="padding:.6rem 0;border-bottom:1px solid var(--rule)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <strong style="font-size:13px">{{ p.title }}</strong>
+        <button type="submit" class="btn btn-sm btn-ghost">Save</button>
+      </div>
+      <div class="gap-row mt1" style="flex-wrap:wrap">
+        {% for fd in framework_data %}
+        <label style="display:flex;align-items:center;gap:.3rem;font-size:12px">
+          <input type="checkbox" name="framework_ids" value="{{ fd.framework.id }}" {% if fd.framework in p.frameworks %}checked{% endif %}> {{ fd.framework.name }}
+        </label>
+        {% endfor %}
+      </div>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{
+  "document_id": "POL-REMOTE-GOV-2026-01",
+  "title": "Remote Work Governance and Allowance Standard",
+  "effective_date": "2026-07-01",
+  "frameworks": [
+    "ISO/IEC 27001",
+    "SOC 2 Type II",
+    "GDPR"
+  ],
+  "operational_domain": "Workforce Mobility and Endpoint Security",
+  "questions": [
+    {
+      "question": "Which role is required to use a hardware-backed MFA method and why is this requirement stricter than standard access?",
+      "answer": "The Finance Controller is required to use hardware-backed MFA because the policy sets Tier 3 Restricted access to dual approval and quarterly review, which triggers stricter assurance controls than standard role access."
+    },
+    {
+      "question": "Under the document, what is the required response time for a privacy incident or regulator inquiry?",
+      "answer": "The policy requires the DPO and privacy operations team to acknowledge receipt, triage severity, and communicate updates within the legally required notice window, with SLA-bound escalation and remediation timeframes."
+    },
+    {
+      "question": "What is the consequence for repeated violations of the standard?",
+      "answer": "Repeat violations may result in temporary access suspension, mandatory retraining, increased audit frequency, and formal disciplinary action."
+    },
+    {
+      "question": "Which role has the shortest session timeout, and what is its value?",
+      "answer": "The Finance Controller has a 120-minute session timeout under the Tier 3 Restricted control matrix."
+    },
+    {
+      "question": "What are the minimum conditions required for privileged access across the stated matrix?",
+      "answer": "Privileged access requires least-privilege access, multi-factor authentication, documented approval conditions, and time-bounded session management consistent with role criticality and data sensitivity."
+    }
+  ]
+}

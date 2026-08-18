@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}What-If Review Queue — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>What-If Review Queue</h1>
+    <p>Grey-area or higher-risk scenarios employees have run through the What-If Simulator, flagged for HR review.</p>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">{{ total_runs }}</div><div class="stat-label">Total scenarios checked (all time)</div></div>
+  <div class="stat-card {% if queries %}amber{% endif %}"><div class="stat-val">{{ queries|length }}</div><div class="stat-label">Awaiting HR review</div></div>
+</div>
+
+{% set verdict_meta = {
+  'compliant':     {'label': 'Compliant',      'bg': 'var(--green2)',  'fg': 'var(--green)'},
+  'not_compliant': {'label': 'Not Compliant',  'bg': 'var(--red2)',    'fg': 'var(--red)'},
+  'depends':       {'label': 'Depends',        'bg': 'var(--amber2)',  'fg': 'var(--amber)'},
+  'unclear':       {'label': 'Unclear',        'bg': 'var(--blue2)',   'fg': 'var(--blue)'},
+} %}
+
+{% if queries %}
+<div style="display:flex;flex-direction:column;gap:.75rem">
+  {% for q in queries %}
+  {% set vm = verdict_meta.get(q.verdict, verdict_meta['unclear']) %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--faint)">{{ q.user.name if q.user else 'Unknown' }} · {{ q.created_at.strftime('%b %d, %Y %H:%M') }}</div>
+        <div style="font-size:14.5px;font-weight:600;margin-top:.25rem">"{{ q.scenario_text }}"</div>
+      </div>
+      <span style="background:{{ vm.bg }};color:{{ vm.fg }};font-weight:700;font-size:12px;padding:.3rem .7rem;border-radius:20px;flex-shrink:0">{{ vm.label }} · {{ q.confidence }}%</span>
+    </div>
+    {% if q.explanation %}<div style="font-size:13px;color:var(--ink2);margin-top:.6rem">{{ q.explanation }}</div>{% endif %}
+    {% if q.required_actions %}
+    <ul style="margin-top:.5rem;padding-left:1.2rem;font-size:12.5px;color:var(--ink2)">
+      {% for a in q.required_actions %}<li>{{ a }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    <form method="POST" action="{{ url_for('what_if.resolve', query_id=q.id) }}" style="margin-top:.75rem">
+      <button type="submit" class="btn btn-sm btn-secondary">Mark reviewed</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">Nothing flagged right now</div><div class="empty-sub">Clear-cut scenarios don't land here — only ambiguous, low-confidence, or non-compliant ones do.</div></div>
+{% endif %}
+{% endblock %}

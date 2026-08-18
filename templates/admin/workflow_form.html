@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{% if template %}Edit{% else %}New{% endif %} Workflow Template — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>{% if template %}Edit{% else %}New{% endif %} Workflow Template</h1><p>Define stages, assign approvers (role or specific person), and set SLA timers</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('workflow.template_list') }}" class="btn btn-ghost">Cancel</a></div>
+</div>
+
+{% if error %}<div class="alert alert-danger mb2">{{ error }}</div>{% endif %}
+
+<form method="POST" id="templateForm">
+  <div class="card mb3">
+    <div class="card-label">Template details</div>
+    <div class="form-grid">
+      <div class="field"><label>Name *</label><input name="name" value="{{ template.name if template else '' }}" required placeholder="e.g. High-Risk Policy Approval"></div>
+      <div class="field">
+        <label>Restrict to category (optional)</label>
+        <select name="category_id">
+          <option value="">Any category</option>
+          {% for c in categories %}<option value="{{ c.id }}" {% if template and template.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Description</label><textarea name="description" rows="2">{{ template.description if template else '' }}</textarea></div>
+    <div class="field">
+      <label>Applies to priority (optional — leave unchecked for "any priority" = conditional workflow)</label>
+      <div class="gap-row">
+        {% for p in all_priorities %}
+        <label style="display:flex;align-items:center;gap:.3rem;font-size:13px">
+          <input type="checkbox" name="applies_priorities" value="{{ p }}" {% if template and p in template.applies_priorities %}checked{% endif %}> {{ p.title() }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:.4rem;font-size:13px;margin-top:.5rem">
+      <input type="checkbox" name="is_default" {% if template and template.is_default %}checked{% endif %}> Use as the default workflow when no other template matches
+    </label>
+  </div>
+
+  <div class="card-label mb2">Stages (executed in order top to bottom)</div>
+  <div id="stagesContainer">
+    {% if template %}
+      {% for stage in template.stages %}
+      <div class="stage-block card mb2">
+        <div class="gap-row" style="justify-content:space-between;align-items:center">
+          <strong style="font-family:var(--font-serif)">Stage {{ loop.index }}</strong>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="removeStage(this)">Remove stage</button>
+        </div>
+        <div class="form-grid mt1">
+          <div class="field"><label>Stage name</label><input name="stage_name[]" value="{{ stage.name }}" required></div>
+          <div class="field">
+            <label>Approval mode</label>
+            <select name="stage_mode[]">
+              <option value="all" {% if stage.approval_mode == 'all' %}selected{% endif %}>All approvers must approve</option>
+              <option value="any" {% if stage.approval_mode == 'any' %}selected{% endif %}>Any one approver clears it</option>
+            </select>
+          </div>
+          <div class="field"><label>SLA (hours, optional)</label><input type="number" name="stage_sla[]" value="{{ stage.sla_hours or '' }}" placeholder="e.g. 48"></div>
+        </div>
+        <div class="card-label">Approvers</div>
+        <div class="approvers-list">
+          {% for approver in stage.approvers %}
+          <div class="approver-row gap-row mb1">
+            <input type="hidden" class="approver-idx-input" name="approver_stage_idx[]" value="{{ loop.index0 }}">
+            <select name="approver_type[]" class="approver-type-select" onchange="toggleApproverInputs(this)">
+              <option value="role" {% if approver.approver_type == 'role' %}selected{% endif %}>By role</option>
+              <option value="user" {% if approver.approver_type == 'user' %}selected{% endif %}>Specific person</option>
+            </select>
+            <select name="approver_role[]" class="approver-role-select" style="{% if approver.approver_type != 'role' %}display:none{% endif %}">
+              {% for r in all_roles %}<option value="{{ r }}" {% if approver.role == r %}selected{% endif %}>{{ r.title() }}</option>{% endfor %}
+            </select>
+            <select name="approver_user_id[]" class="approver-user-select" style="{% if approver.approver_type != 'user' %}display:none{% endif %}">
+              <option value="">— Select —</option>
+              {% for u in users %}<option value="{{ u.id }}" {% if approver.user_id == u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+            </select>
+            <button type="button" class="btn btn-sm btn-ghost" onclick="this.closest('.approver-row').remove()">✕</button>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary mt1" onclick="addApprover(this)">+ Add approver</button>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <button type="button" class="btn btn-secondary mb3" onclick="addStage()">+ Add stage</button>
+
+  <div class="gap-row">
+    <button type="submit" class="btn btn-primary">{% if template %}Save template{% else %}Create template{% endif %}</button>
+    <a href="{{ url_for('workflow.template_list') }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+
+<template id="stageTemplate">
+  <div class="stage-block card mb2">
+    <div class="gap-row" style="justify-content:space-between;align-items:center">
+      <strong style="font-family:var(--font-serif)">Stage</strong>
+      <button type="button" class="btn btn-sm btn-ghost" onclick="removeStage(this)">Remove stage</button>
+    </div>
+    <div class="form-grid mt1">
+      <div class="field"><label>Stage name</label><input name="stage_name[]" required></div>
+      <div class="field">
+        <label>Approval mode</label>
+        <select name="stage_mode[]">
+          <option value="all">All approvers must approve</option>
+          <option value="any">Any one approver clears it</option>
+        </select>
+      </div>
+      <div class="field"><label>SLA (hours, optional)</label><input type="number" name="stage_sla[]" placeholder="e.g. 48"></div>
+    </div>
+    <div class="card-label">Approvers</div>
+    <div class="approvers-list"></div>
+    <button type="button" class="btn btn-sm btn-secondary mt1" onclick="addApprover(this)">+ Add approver</button>
+  </div>
+</template>
+
+<template id="approverTemplate">
+  <div class="approver-row gap-row mb1">
+    <input type="hidden" class="approver-idx-input" name="approver_stage_idx[]" value="0">
+    <select name="approver_type[]" class="approver-type-select" onchange="toggleApproverInputs(this)">
+      <option value="role">By role</option>
+      <option value="user">Specific person</option>
+    </select>
+    <select name="approver_role[]" class="approver-role-select">
+      {% for r in all_roles %}<option value="{{ r }}">{{ r.title() }}</option>{% endfor %}
+    </select>
+    <select name="approver_user_id[]" class="approver-user-select" style="display:none">
+      <option value="">— Select —</option>
+      {% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}
+    </select>
+    <button type="button" class="btn btn-sm btn-ghost" onclick="this.closest('.approver-row').remove()">✕</button>
+  </div>
+</template>
+
+<script>
+function addStage() {
+  const tpl = document.getElementById('stageTemplate').content.cloneNode(true);
+  document.getElementById('stagesContainer').appendChild(tpl);
+  renumberStages();
+}
+function removeStage(btn) {
+  btn.closest('.stage-block').remove();
+  renumberStages();
+}
+function addApprover(btn) {
+  const tpl = document.getElementById('approverTemplate').content.cloneNode(true);
+  btn.closest('.stage-block').querySelector('.approvers-list').appendChild(tpl);
+  renumberStages();
+}
+function toggleApproverInputs(sel) {
+  const row = sel.closest('.approver-row');
+  const isRole = sel.value === 'role';
+  row.querySelector('.approver-role-select').style.display = isRole ? '' : 'none';
+  row.querySelector('.approver-user-select').style.display = isRole ? 'none' : '';
+}
+function renumberStages() {
+  document.querySelectorAll('.stage-block').forEach((block, idx) => {
+    block.querySelectorAll('.approver-idx-input').forEach(inp => inp.value = idx);
+  });
+}
+document.getElementById('templateForm').addEventListener('submit', renumberStages);
+</script>
+{% endblock %}

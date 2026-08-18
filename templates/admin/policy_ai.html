@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant — {{ policy.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>✦ AI Assistant</h1><p>{{ policy.title }} · {{ policy.current_version }}</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('admin.policy_detail', policy_id=policy.id) }}" class="btn btn-ghost">← Back to policy</a></div>
+</div>
+
+<div class="seg mb3">
+  <button type="button" class="seg-btn active" id="tab-writer-btn" onclick="showTab('writer')">Writer</button>
+  <button type="button" class="seg-btn" id="tab-review-btn" onclick="showTab('review')">Review</button>
+  <button type="button" class="seg-btn" id="tab-insights-btn" onclick="showTab('insights')">Insights</button>
+</div>
+
+{% if not current_ver %}
+<div class="alert alert-danger">This policy has no content yet — add a version first.</div>
+{% else %}
+
+<!-- ============ WRITER TAB ============ -->
+<div id="tab-writer" class="tab-panel">
+  <div class="grid2 mb3">
+    <div class="card">
+      <div class="card-label">Current content</div>
+      <textarea id="writerContent" rows="18" style="font-size:12.5px">{{ current_ver.content }}</textarea>
+      <div class="gap-row mt2" style="flex-wrap:wrap">
+        <button class="btn btn-sm btn-secondary" onclick="writerAction('simplify')">Simplify</button>
+        <button class="btn btn-sm btn-secondary" onclick="writerAction('grammar')">Improve Grammar</button>
+        <button class="btn btn-sm btn-secondary" onclick="writerAction('tone')">Professional Tone</button>
+        <button class="btn btn-sm btn-secondary" onclick="writerAction('rewrite')">Rewrite / Reorganize</button>
+      </div>
+      <div class="gap-row mt2">
+        <input id="targetLanguage" placeholder="Target language (e.g. Spanish, Hindi)" style="flex:1;padding:.5rem .7rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:13px">
+        <button class="btn btn-sm btn-secondary" onclick="writerAction('translate')">Translate</button>
+      </div>
+      <div class="mt2">
+        <textarea id="clauseInput" rows="2" placeholder="Paste a specific clause to explain…" style="font-size:12.5px"></textarea>
+        <button class="btn btn-sm btn-secondary mt1" onclick="writerAction('explain')">Explain Clause</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">AI output <span id="writerStatus" class="text-faint" style="font-weight:400;font-size:11.5px"></span></div>
+      <textarea id="writerResult" rows="18" style="font-size:12.5px" placeholder="AI output will appear here…" readonly></textarea>
+      <form method="POST" action="{{ url_for('policy_ai.apply_writer_output', policy_id=policy.id) }}" class="mt2" id="applyForm">
+        <input type="hidden" name="content" id="applyContent">
+        <div class="gap-row">
+          <input name="change_summary" placeholder="What changed? (for the new version)" style="flex:1;padding:.5rem .7rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:13px" required>
+          <select name="bump_type" style="padding:.5rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:13px"><option value="minor">Minor bump</option><option value="major">Major bump</option></select>
+          <button type="submit" class="btn btn-sm btn-primary" id="applyBtn" disabled>Apply as new version</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ REVIEW TAB ============ -->
+<div id="tab-review" class="tab-panel" style="display:none">
+  <div class="card mb3">
+    <div class="gap-row" style="justify-content:space-between;align-items:center">
+      <div class="card-label" style="margin:0">AI Review</div>
+      <button class="btn btn-sm btn-primary" onclick="runReview()" id="reviewBtn">↻ Run AI Review</button>
+    </div>
+    <div id="reviewEmpty" class="text-faint mt2" style="font-size:13px" {% if review %}style="display:none"{% endif %}>
+      {% if not review %}No review run yet.{% endif %}
+    </div>
+    <div id="reviewResults" style="{% if not review %}display:none{% endif %}">
+      <div class="grid2 mt2">
+        <div>
+          <div class="card-label">Risk score</div>
+          <div id="riskScoreVal" style="font-family:var(--font-serif);font-size:36px;font-weight:700">{{ review.risk_score if review else 0 }}<span style="font-size:16px;color:var(--faint)">/100</span></div>
+        </div>
+        <div>
+          <div class="card-label">Missing sections</div>
+          <ul id="missingSections" style="margin-left:1.1rem;font-size:13px">
+            {% if review %}{% for s in review.missing_sections %}<li>{{ s }}</li>{% endfor %}{% endif %}
+          </ul>
+        </div>
+      </div>
+      <div class="card-label mt2">Compliance issues</div>
+      <ul id="complianceIssues" style="margin-left:1.1rem;font-size:13px">
+        {% if review %}{% for s in review.compliance_issues %}<li>{{ s }}</li>{% endfor %}{% endif %}
+      </ul>
+      <div class="card-label mt2">Legal language issues</div>
+      <ul id="legalIssues" style="margin-left:1.1rem;font-size:13px">
+        {% if review %}{% for s in review.legal_issues %}<li>{{ s }}</li>{% endfor %}{% endif %}
+      </ul>
+      <div class="card-label mt2">Suggestions</div>
+      <ul id="suggestions" style="margin-left:1.1rem;font-size:13px">
+        {% if review %}{% for s in review.suggestions %}<li>{{ s }}</li>{% endfor %}{% endif %}
+      </ul>
+      <div class="card-label mt2">Duplicate policies</div>
+      <div id="duplicatesList" style="font-size:13px">
+        {% if review and review.duplicates %}
+          {% for d in review.duplicates %}<div class="mb1">{{ d.title }} — <span class="text-mono">{{ d.similarity }}% similar</span></div>{% endfor %}
+        {% else %}<span class="text-faint">None found.</span>{% endif %}
+      </div>
+      <div class="card-label mt2">Conflicts</div>
+      <div id="conflictsList" style="font-size:13px">
+        {% if review and review.conflicts %}
+          {% for c in review.conflicts %}<div class="mb1" style="color:var(--red)">{{ c.title }}: {{ c.conflict_description }}</div>{% endfor %}
+        {% else %}<span class="text-faint">None found.</span>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INSIGHTS TAB ============ -->
+<div id="tab-insights" class="tab-panel" style="display:none">
+  <div class="card mb3">
+    <div class="gap-row" style="justify-content:space-between;align-items:center">
+      <div class="card-label" style="margin:0">AI Insights</div>
+      <button class="btn btn-sm btn-primary" onclick="runInsights()" id="insightsBtn">↻ Generate Insights</button>
+    </div>
+    <div id="insightsEmpty" class="text-faint mt2" style="font-size:13px" {% if insight %}style="display:none"{% endif %}>
+      {% if not insight %}No insights generated yet.{% endif %}
+    </div>
+    <div id="insightsResults" style="{% if not insight %}display:none{% endif %}">
+      <div class="gap-row mt2">
+        <span class="pill pill-medium">📖 <span id="readingTime">{{ insight.reading_time_minutes if insight else 0 }}</span> min read</span>
+      </div>
+      <div class="card-label mt2">Summary</div>
+      <div id="insightSummary" style="font-size:13.5px">{{ insight.summary if insight else '' }}</div>
+      <div class="card-label mt2">Executive summary</div>
+      <div id="insightExecSummary" style="font-size:13.5px">{{ insight.executive_summary if insight else '' }}</div>
+      <div class="card-label mt2">Key points</div>
+      <ul id="insightKeyPoints" style="margin-left:1.1rem;font-size:13.5px">
+        {% if insight %}{% for kp in insight.key_points %}<li>{{ kp }}</li>{% endfor %}{% endif %}
+      </ul>
+      <div class="card-label mt2">Impact analysis</div>
+      <div id="insightImpact" style="font-size:13.5px">{{ insight.impact_analysis if insight else '' }}</div>
+      <div class="card-label mt2">Important changes since last version</div>
+      <div id="insightChanges" style="font-size:13.5px;white-space:pre-wrap"></div>
+      <div class="card-label mt2">FAQ</div>
+      <div id="insightFaq">
+        {% if insight %}{% for f in insight.faq %}<div class="mb2"><strong style="font-size:13.5px">{{ f.question }}</strong><div style="font-size:13px;color:var(--ink2)">{{ f.answer }}</div></div>{% endfor %}{% endif %}
+      </div>
+      <div class="card-label mt2">Quiz</div>
+      <div id="insightQuiz">
+        {% if insight %}{% for q in insight.quiz %}
+          <div class="mb2"><strong style="font-size:13.5px">{{ loop.index }}. {{ q.question }}</strong>
+            <ul style="margin-left:1.1rem;font-size:13px">{% for o in q.options %}<li>{{ o }}{% if loop.index0 == q.correct_index %} ✓{% endif %}</li>{% endfor %}</ul>
+          </div>
+        {% endfor %}{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function showTab(name) {
+  ['writer','review','insights'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
+    document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
+  });
+}
+
+async function writerAction(mode) {
+  const content = document.getElementById('writerContent').value.trim();
+  if (!content) return;
+  const status = document.getElementById('writerStatus');
+  status.textContent = 'Working…';
+  const body = new URLSearchParams({ mode, content });
+  if (mode === 'translate') body.set('target_language', document.getElementById('targetLanguage').value || 'Spanish');
+  if (mode === 'explain') body.set('clause', document.getElementById('clauseInput').value.trim());
+  try {
+    const res = await fetch("{{ url_for('policy_ai.writer_action', policy_id=policy.id) }}", { method: 'POST', body });
+    const d = await res.json();
+    if (d.success) {
+      document.getElementById('writerResult').value = d.result;
+      document.getElementById('applyContent').value = d.result;
+      document.getElementById('applyBtn').disabled = (mode === 'explain');
+      status.textContent = 'Done';
+      showToast('AI output ready');
+    } else {
+      status.textContent = d.error || 'Failed';
+    }
+  } catch (e) { status.textContent = 'Error contacting AI service.'; }
+}
+
+async function runReview() {
+  const btn = document.getElementById('reviewBtn');
+  btn.disabled = true; btn.textContent = 'Analyzing…';
+  try {
+    const res = await fetch("{{ url_for('policy_ai.run_review', policy_id=policy.id) }}", { method: 'POST' });
+    const d = await res.json();
+    if (d.success) {
+      document.getElementById('reviewEmpty').style.display = 'none';
+      document.getElementById('reviewResults').style.display = 'block';
+      document.getElementById('riskScoreVal').innerHTML = d.risk_score + '<span style="font-size:16px;color:var(--faint)">/100</span>';
+      const fill = (id, arr) => document.getElementById(id).innerHTML = arr.length ? arr.map(x => `<li>${x}</li>`).join('') : '<li class="text-faint">None</li>';
+      fill('missingSections', d.missing_sections);
+      fill('complianceIssues', d.compliance_issues);
+      fill('legalIssues', d.legal_language_issues);
+      fill('suggestions', d.suggestions);
+      document.getElementById('duplicatesList').innerHTML = d.duplicates.length
+        ? d.duplicates.map(x => `<div class="mb1">${x.title} — <span class="text-mono">${x.similarity}% similar</span></div>`).join('')
+        : '<span class="text-faint">None found.</span>';
+      document.getElementById('conflictsList').innerHTML = d.conflicts.length
+        ? d.conflicts.map(x => `<div class="mb1" style="color:var(--red)">${x.title}: ${x.conflict_description}</div>`).join('')
+        : '<span class="text-faint">None found.</span>';
+      showToast('Review complete');
+    }
+  } finally { btn.disabled = false; btn.textContent = '↻ Run AI Review'; }
+}
+
+async function runInsights() {
+  const btn = document.getElementById('insightsBtn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+  try {
+    const res = await fetch("{{ url_for('policy_ai.run_insights', policy_id=policy.id) }}", { method: 'POST' });
+    const d = await res.json();
+    if (d.success) {
+      document.getElementById('insightsEmpty').style.display = 'none';
+      document.getElementById('insightsResults').style.display = 'block';
+      document.getElementById('readingTime').textContent = d.reading_time_minutes;
+      document.getElementById('insightSummary').textContent = d.summary;
+      document.getElementById('insightExecSummary').textContent = d.executive_summary;
+      document.getElementById('insightImpact').textContent = d.impact_analysis;
+      document.getElementById('insightChanges').textContent = d.important_changes;
+      document.getElementById('insightKeyPoints').innerHTML = d.key_points.map(k => `<li>${k}</li>`).join('');
+      document.getElementById('insightFaq').innerHTML = d.faq.map(f => `<div class="mb2"><strong style="font-size:13.5px">${f.question}</strong><div style="font-size:13px;color:var(--ink2)">${f.answer}</div></div>`).join('') || '<span class="text-faint">None generated.</span>';
+      document.getElementById('insightQuiz').innerHTML = d.quiz.map((q,i) => `<div class="mb2"><strong style="font-size:13.5px">${i+1}. ${q.question}</strong><ul style="margin-left:1.1rem;font-size:13px">${q.options.map((o,j)=>`<li>${o}${j===q.correct_index?' ✓':''}</li>`).join('')}</ul></div>`).join('') || '<span class="text-faint">None generated.</span>';
+      showToast('Insights generated');
+    }
+  } finally { btn.disabled = false; btn.textContent = '↻ Generate Insights'; }
+}
+</script>
+{% endblock %}

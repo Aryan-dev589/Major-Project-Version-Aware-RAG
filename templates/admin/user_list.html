@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Users — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Users</h1><p>{{ users.total }} total accounts</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('admin.user_create') }}" class="btn btn-primary">+ Add User</a></div>
+</div>
+<div class="card mb2">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap">
+    <div class="field" style="margin:0;flex:1;min-width:200px"><input name="q" placeholder="Search name or email…" value="{{ search }}"></div>
+    <div class="field" style="margin:0">
+      <select name="role">
+        <option value="">All roles</option>
+        {% for r in roles %}<option value="{{ r }}" {% if r==role_filter %}selected{% endif %}>{{ r.title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+    <a href="{{ url_for('admin.user_list') }}" class="btn btn-ghost">Clear</a>
+  </form>
+</div>
+{% if users.items %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Last login</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for u in users.items %}
+      <tr>
+        <td style="font-weight:600">{{ u.name }}</td>
+        <td class="td-mono">{{ u.email }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('admin.user_set_role', user_id=u.id) }}" style="display:inline">
+            <select name="role" onchange="this.form.submit()" style="font-size:12px;padding:2px 6px;border:1px solid var(--rule2);border-radius:3px;background:var(--paper);font-family:var(--font-mono)">
+              {% for r in roles %}<option value="{{ r }}" {% if u.role==r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+            </select>
+          </form>
+        </td>
+        <td class="td-mono">{{ u.department.name if u.department else '—' }}</td>
+        <td class="td-mono">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
+        <td><span class="pill {% if u.is_active %}pill-active{% else %}pill-archived{% endif %}">{% if u.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+        <td>
+          {% if u.id != current_user.id %}
+          <form method="POST" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" style="display:inline">
+            <button type="submit" class="btn btn-sm {% if u.is_active %}btn-ghost{% else %}btn-secondary{% endif %}">{% if u.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if users.pages > 1 %}
+<div class="pagination">
+  {% for page in users.iter_pages() %}
+    {% if page %}<a href="{{ url_for('admin.user_list', page=page, q=search, role=role_filter) }}" class="page-btn {% if page==users.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% else %}<div class="empty"><div class="empty-title">No users found</div></div>{% endif %}
+{% endblock %}

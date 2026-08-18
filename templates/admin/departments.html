@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Departments — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Departments</h1></div></div>
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">Add department</div>
+    <form method="POST">
+      <div class="field"><label>Department name *</label><input name="name" placeholder="e.g. Engineering" required></div>
+      <div class="field"><label>Code</label><input name="code" placeholder="ENG" maxlength="10"></div>
+      <button type="submit" class="btn btn-primary">Add department</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Code</th><th>Users</th><th>Policies</th></tr></thead>
+      <tbody>
+        {% for d in departments %}
+        <tr>
+          <td style="font-weight:600">{{ d.name }}</td>
+          <td class="td-mono">{{ d.code or '—' }}</td>
+          <td class="td-mono">{{ d.users.count() }}</td>
+          <td class="td-mono">{{ d.policies.count() }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-faint" style="text-align:center;padding:1.5rem">No departments yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

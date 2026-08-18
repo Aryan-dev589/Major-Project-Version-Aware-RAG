@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Audit Center — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Audit Center</h1><p>Immutable event log across the entire platform</p></div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('audit_center.security_report') }}" class="btn btn-secondary">🛡 Security Report</a>
+    <a href="{{ url_for('audit_center.timeline') }}" class="btn btn-primary">Full Timeline →</a>
+  </div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ total_events }}</div><div class="stat-label">Total events</div></div>
+  <div class="stat-card"><div class="stat-val">{{ events_today }}</div><div class="stat-label">Today</div></div>
+  <div class="stat-card"><div class="stat-val">{{ events_30d }}</div><div class="stat-label">Last 30 days</div></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Activity, last 14 days</div>
+  <canvas id="activityChart" height="80"></canvas>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Top actions (30 days)</div>
+    {% for action, count in top_actions %}
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;font-size:12.5px">
+      <span class="text-mono" style="flex:1">{{ action }}</span><span style="color:var(--faint)">{{ count }}</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No events yet.</div>{% endfor %}
+  </div>
+  <div class="card">
+    <div class="card-label">By resource type (30 days)</div>
+    {% for rtype, count in top_resource_types %}
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;font-size:12.5px">
+      <span class="text-mono" style="flex:1">{{ rtype }}</span><span style="color:var(--faint)">{{ count }}</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No events yet.</div>{% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Most active users (30 days) — click for full activity replay</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>User</th><th>Role</th><th>Events</th><th></th></tr></thead>
+      <tbody>
+        {% for u in top_users %}
+        <tr>
+          <td>{{ u.user.name }}</td>
+          <td class="td-mono">{{ u.user.role }}</td>
+          <td class="td-mono">{{ u.count }}</td>
+          <td><a href="{{ url_for('audit_center.user_activity', user_id=u.user.id) }}" class="btn btn-sm btn-secondary">View</a></td>
+        </tr>
+        {% else %}<tr><td colspan="4" class="text-faint">No activity yet</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const archiveColor = getComputedStyle(document.documentElement).getPropertyValue('--archive').trim() || '#2f5233';
+new Chart(document.getElementById('activityChart'), {
+  type: 'line',
+  data: {
+    labels: {{ activity_trend|map(attribute='label')|list|tojson }},
+    datasets: [{ data: {{ activity_trend|map(attribute='value')|list|tojson }}, borderColor: archiveColor, backgroundColor: archiveColor + '22', fill: true, tension: 0.3, pointRadius: 2 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+});
+</script>
+{% endblock %}

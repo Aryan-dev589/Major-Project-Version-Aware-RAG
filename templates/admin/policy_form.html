@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{% if policy %}Edit{% else %}New{% endif %} Policy — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>{% if policy %}Edit Policy{% else %}Create New Policy{% endif %}</h1>
+    <p>{% if policy %}{{ policy.policy_id }}{% else %}Fill in metadata and write the policy content below{% endif %}</p>
+  </div>
+  {% if policy %}<div class="page-header-actions"><a href="{{ url_for('admin.policy_detail', policy_id=policy.id) }}" class="btn btn-ghost">Cancel</a></div>{% endif %}
+</div>
+{% if error %}<div class="alert alert-danger mb2">{{ error }}</div>{% endif %}
+
+<!-- MODIFIED: Added enctype for file uploads -->
+<form method="POST" enctype="multipart/form-data">
+  <div class="grid2 mb2">
+    <div class="card">
+      <div class="card-label">Basic information</div>
+      <div class="field"><label>Policy title *</label><input name="title" value="{{ policy.title if policy else '' }}" placeholder="e.g. Remote Work Policy" required></div>
+      <div class="field"><label>Description</label><input name="description" value="{{ policy.description if policy else '' }}" placeholder="Brief description of what this policy covers"></div>
+      <div class="field">
+        <label>Category</label>
+        <select name="category_id">
+          <option value="">— Select category —</option>
+          {% for c in categories %}<option value="{{ c.id }}" {% if policy and policy.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Department</label>
+        <select name="department_id">
+          <option value="">— All departments —</option>
+          {% for d in departments %}<option value="{{ d.id }}" {% if policy and policy.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Tags (comma-separated)</label><input name="tags" value="{{ policy.tag_names|join(', ') if policy else '' }}" placeholder="leave, pto, vacation"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Metadata</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Priority</label>
+          <select name="priority">
+            {% for p in ['low','medium','high','critical'] %}<option value="{{ p }}" {% if policy and policy.priority == p %}selected{% elif not policy and p == 'medium' %}selected{% endif %}>{{ p.title() }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Confidentiality</label>
+          <select name="confidentiality">
+            {% for c in ['public','internal','confidential','restricted'] %}<option value="{{ c }}" {% if policy and policy.confidentiality == c %}selected{% elif not policy and c == 'internal' %}selected{% endif %}>{{ c.title() }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Effective date</label><input type="date" name="effective_date" value="{{ policy.effective_date.isoformat() if policy and policy.effective_date else '' }}"></div>
+      <div class="field"><label>Review date</label><input type="date" name="review_date" value="{{ policy.review_date.isoformat() if policy and policy.review_date else '' }}"></div>
+      <div class="field"><label>Expiry date</label><input type="date" name="expiry_date" value="{{ policy.expiry_date.isoformat() if policy and policy.expiry_date else '' }}"></div>
+      <div class="field"><label>Reviewer</label>
+        <select name="reviewer_id">
+          <option value="">— Select reviewer —</option>
+          {% for u in hr_users %}<option value="{{ u.id }}" {% if policy and policy.reviewer_id == u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Approver</label>
+        <select name="approver_id">
+          <option value="">— Select approver —</option>
+          {% for u in hr_users %}<option value="{{ u.id }}" {% if policy and policy.approver_id == u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:13.5px;cursor:pointer;margin-top:.5rem">
+        <input type="checkbox" name="is_mandatory" {% if policy and policy.is_mandatory %}checked{% endif %}> Mark as mandatory (employees must acknowledge)
+      </label>
+    </div>
+  </div>
+
+  {% if not policy %}
+  
+  <!-- MODIFIED: New Document Upload Section -->
+  <div class="card mb2" style="background-color: var(--bg-hover, #f8f9fa);">
+    <div class="card-label">Upload Document (Optional)</div>
+    <p style="font-size: 13px; color: #666; margin-bottom: 1rem;">Upload a text-based PDF. If provided, this will automatically override the manual text editor below.</p>
+    <div class="field" style="margin:0;">
+      <input type="file" id="policy_file" name="policy_file" accept=".pdf" style="padding: 1.5rem; border: 2px dashed #ccc; border-radius: 8px; width: 100%; background: #fff; cursor: pointer;">
+    </div>
+  </div>
+
+  <div class="card mb2">
+    <div class="card-label">Policy content (v1.0)</div>
+    <div class="gap-row mb1">
+      <input type="text" id="aiKeyPoints" placeholder="Optional: key points to include…" style="flex:1;padding:.5rem .7rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:13px">
+      <button type="button" class="btn btn-sm btn-secondary" onclick="generateDraft()" id="genDraftBtn">✦ Generate with AI</button>
+    </div>
+    <div class="field" style="margin:0">
+      <!-- MODIFIED: Removed 'required' attribute so form submits when PDF is uploaded -->
+      <textarea name="content" id="policyContent" rows="18" placeholder="Write the full policy text here. Use clear numbered sections, e.g.:&#10;&#10;1. Purpose&#10;This policy establishes...&#10;&#10;2. Scope&#10;This applies to...&#10;&#10;3. Policy Details&#10;..."></textarea>
+    </div>
+    <div class="field mt2"><label>Initial version summary</label><input name="change_summary" placeholder="e.g. Initial version" value="Initial version"></div>
+  </div>
+  <script>
+  async function generateDraft() {
+    const title = document.querySelector('input[name="title"]').value.trim();
+    if (!title) { alert('Enter a policy title first.'); return; }
+    const btn = document.getElementById('genDraftBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const body = new URLSearchParams({
+        title,
+        description: document.querySelector('input[name="description"]').value,
+        category_name: document.querySelector('select[name="category_id"] option:checked')?.textContent || '',
+        key_points: document.getElementById('aiKeyPoints').value,
+      });
+      const res = await fetch("{{ url_for('policy_ai.generate_draft') }}", { method: 'POST', body });
+      const d = await res.json();
+      if (d.success) {
+        document.getElementById('policyContent').value = d.content;
+        showToast('Draft generated — review before saving');
+      } else {
+        alert(d.error || 'Generation failed.');
+      }
+    } catch (e) {
+      alert('Error contacting AI service.');
+    } finally {
+      btn.disabled = false; btn.textContent = '✦ Generate with AI';
+    }
+  }
+  </script>
+  {% endif %}
+
+  <div class="gap-row">
+    <button type="submit" class="btn btn-primary">{% if policy %}Save changes{% else %}Create policy{% endif %}</button>
+    <a href="{{ url_for('admin.policy_list') }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

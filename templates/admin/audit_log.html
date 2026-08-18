@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Audit Log</h1><p>Immutable record of every action in the system</p></div></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Resource</th><th>IP</th></tr></thead>
+    <tbody>
+      {% for log in logs.items %}
+      <tr>
+        <td class="td-mono">{{ log.timestamp.strftime('%d %b %Y %H:%M:%S') }}</td>
+        <td style="font-weight:500">{{ log.user.name if log.user else 'System' }}</td>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--archive)">{{ log.action }}</span></td>
+        <td class="td-mono">{% if log.resource_type %}{{ log.resource_type }}{% if log.resource_id %}#{{ log.resource_id }}{% endif %}{% else %}—{% endif %}</td>
+        <td class="td-mono">{{ log.ip_address or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-faint" style="text-align:center;padding:2rem">No audit entries yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if logs.pages > 1 %}
+<div class="pagination">
+  {% for page in logs.iter_pages() %}
+    {% if page %}<a href="{{ url_for('admin.audit_log', page=page) }}" class="page-btn {% if page==logs.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

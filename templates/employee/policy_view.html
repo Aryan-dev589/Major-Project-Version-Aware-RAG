@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}{{ policy.title }} — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="gap-row mb1">
+      <span class="text-mono" style="color:var(--faint)">{{ policy.policy_id }}</span>
+      {% if policy.category %}<span class="tag-chip">{{ policy.category.name }}</span>{% endif %}
+      {% if policy.is_mandatory %}<span class="pill pill-mandatory">Mandatory</span>{% endif %}
+      <span class="pill pill-{{ policy.priority }}">{{ policy.priority }}</span>
+    </div>
+    <h1>{{ policy.title }}</h1>
+    {% if policy.description %}<p>{{ policy.description }}</p>{% endif %}
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn-secondary" id="likeBtn" onclick="toggleLike({{ policy.id }})">
+      {% if liked_by_me %}♥{% else %}♡{% endif %} <span id="likeCount">{{ like_count }}</span>
+    </button>
+    <button class="btn btn-secondary" id="saveBtn" onclick="toggleSave({{ policy.id }})">
+      {% if policy in current_user.saved %}Saved{% else %}+ Save{% endif %}
+    </button>
+    <a href="{{ url_for('employee.policy_download_pdf', policy_id=policy.id) }}" class="btn btn-secondary">⬇ Download PDF</a>
+    {% if current_user.can_manage_policies() %}
+    <a href="{{ url_for('admin.policy_detail', policy_id=policy.id) }}" class="btn btn-ghost">Admin view</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if as_of_date %}
+<div class="alert {% if no_version_found %}alert-warning{% else %}alert-success{% endif %} mb2">
+  {% if no_version_found %}
+  No version of this policy existed as of <strong>{{ as_of_date }}</strong> — showing the policy's current content below has been skipped.
+  {% else %}
+  Showing this policy as it stood on <strong>{{ as_of_date }}</strong> ({{ version.version_label }}) — not the current version.
+  {% endif %}
+  <a href="{{ url_for('employee.policy_view', policy_id=policy.id) }}" style="margin-left:.5rem;font-weight:600">Back to current version</a>
+</div>
+{% endif %}
+
+<div class="grid2 mb2" style="grid-template-columns:2fr 1fr">
+  <div>
+    <!-- Version selector -->
+    {% if all_versions|length > 1 %}
+    <div class="card mb2" style="padding:.85rem 1rem">
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600">Version:</span>
+        {% for v in all_versions %}
+        <a href="#" class="pill {% if v.is_active %}pill-active{% else %}pill-archived{% endif %}" style="text-decoration:none">
+          {{ v.version_label }} {% if v.is_active %}(current){% endif %}
+        </a>
+        {% endfor %}
+        {% if all_versions|length >= 2 %}
+        <a href="{{ url_for('admin.version_compare', policy_id=policy.id) }}" class="btn btn-sm btn-ghost" style="margin-left:auto">Compare versions</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not as_of_date %}
+    <!-- Policy Time Machine -->
+    <div class="card mb2" style="padding:.85rem 1rem">
+      <form method="GET" action="{{ url_for('employee.policy_as_of', policy_id=policy.id) }}" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600">🕐 Time Machine — what did this say on:</span>
+        <input type="date" name="date" required style="padding:.35rem .5rem;border:1px solid var(--rule);border-radius:var(--r);font-size:13px">
+        <button type="submit" class="btn btn-sm btn-secondary">View as of that date</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Policy content -->
+    {% if version %}
+    <div class="card mb2">
+      <div class="card-label">{{ version.version_label }} · Effective {{ version.effective_date or policy.effective_date or 'N/A' }}</div>
+      <div class="policy-content">{{ version.content }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Acknowledge -->
+    {% if policy.is_mandatory %}
+    <div class="card mb2" style="border-left:3px solid {% if ack and ack.acknowledged_at %}var(--archive){% else %}var(--red3){% endif %}">
+      {% if ack and ack.acknowledged_at %}
+      <div class="alert alert-success" style="margin:0">
+        You acknowledged this policy on {{ ack.acknowledged_at.strftime('%d %b %Y at %H:%M') }} UTC<br>
+        <span class="text-mono">Digital signature: {{ ack.digital_signature }}</span>
+      </div>
+      <a href="{{ url_for('employee.certificate', policy_id=policy.id) }}" class="btn btn-sm btn-secondary mt2">🎓 Download Certificate</a>
+      {% else %}
+      <div class="card-label" style="color:var(--red)">This policy requires your acknowledgement</div>
+      <p style="font-size:13.5px;color:var(--ink2);margin-bottom:1rem">Please read the policy above, then click below to confirm you have read and understood it. Your name and timestamp will be recorded as a digital signature.</p>
+      <form method="POST" action="{{ url_for('employee.policy_acknowledge', policy_id=policy.id) }}">
+        <button type="submit" class="btn btn-primary" onclick="return confirm('By clicking OK you confirm you have read and understood this policy.')">I have read and acknowledge this policy</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Quiz -->
+    {% if insight and insight.quiz %}
+    <div class="card mb2">
+      <div class="card-label">Test your understanding</div>
+      {% if my_quiz_attempt %}
+      <p style="font-size:13.5px;color:var(--ink2)">Your best score: <strong>{{ my_quiz_attempt.score }}/{{ my_quiz_attempt.total }}</strong> ({{ my_quiz_attempt.percentage }}%) {% if my_quiz_attempt.passed %}✓ Passed{% endif %}</p>
+      {% endif %}
+      <a href="{{ url_for('employee.take_quiz', policy_id=policy.id) }}" class="btn btn-sm btn-secondary">{% if my_quiz_attempt %}Retake Quiz{% else %}Take Quiz{% endif %}</a>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="card mb2" id="comments">
+      <div class="card-label">Comments ({{ comments|length }})</div>
+      <form method="POST" action="{{ url_for('employee.add_comment', policy_id=policy.id) }}" class="mb2">
+        <textarea name="content" rows="2" placeholder="Ask a question or leave a comment…" required></textarea>
+        <button type="submit" class="btn btn-sm btn-secondary mt1">Post</button>
+      </form>
+      {% for c in comments %}
+      <div style="padding:.6rem 0;border-bottom:1px solid var(--rule)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <strong style="font-size:13px">{{ c.user.name }}</strong>
+          <span class="text-faint" style="font-size:11px">{{ c.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+        </div>
+        <div style="font-size:13.5px;color:var(--ink2);margin-top:.2rem">{{ c.content }}</div>
+        {% if c.user_id == current_user.id or current_user.can_manage_policies() %}
+        <form method="POST" action="{{ url_for('employee.delete_comment', comment_id=c.id) }}" onsubmit="return confirm('Delete this comment?')">
+          <button type="submit" class="btn btn-sm btn-ghost" style="padding:.1rem .4rem;font-size:11px">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}<div class="text-faint" style="font-size:13px">No comments yet — be the first to ask a question.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <!-- Metadata -->
+    <div class="card mb2">
+      <div class="card-label">Details</div>
+      <table style="font-size:13px;width:100%">
+        {% macro row(k,v) %}<tr><td style="padding:.3rem .4rem;color:var(--faint);width:100px">{{ k }}</td><td style="padding:.3rem .4rem">{{ v or '—' }}</td></tr>{% endmacro %}
+        {{ row('Version', 'v' + policy.current_version) }}
+        {{ row('Department', policy.department.name if policy.department else '—') }}
+        {{ row('Author', policy.author.name if policy.author else '—') }}
+        {{ row('Effective', policy.effective_date.isoformat() if policy.effective_date else '—') }}
+        {{ row('Review due', policy.review_date.isoformat() if policy.review_date else '—') }}
+        {{ row('Views', policy.view_count) }}
+      </table>
+      {% if policy.tags %}<div class="mt2">{% for t in policy.tags %}<a href="{{ url_for('employee.policy_browse', tag=t.name) }}" class="tag-chip">{{ t.name }}</a>{% endfor %}</div>{% endif %}
+    </div>
+
+    <!-- Related -->
+    {% if related %}
+    <div class="card">
+      <div class="card-label">Related policies</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.3rem">
+        {% for r in related %}
+        <a href="{{ url_for('employee.policy_view', policy_id=r.id) }}" style="font-size:13.5px;font-weight:500;padding:.45rem 0;border-bottom:1px solid var(--rule);display:block">
+          {{ r.title }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+async function toggleSave(id){
+  const btn=document.getElementById('saveBtn');
+  const res=await fetch(`/policies/${id}/save`,{method:'POST'});
+  const d=await res.json();
+  btn.textContent=d.saved?'Saved':'+ Save';
+}
+async function toggleLike(id){
+  const res=await fetch(`/policies/${id}/like`,{method:'POST'});
+  const d=await res.json();
+  document.getElementById('likeCount').textContent=d.count;
+  document.getElementById('likeBtn').innerHTML=(d.liked?'♥':'♡')+' <span id="likeCount">'+d.count+'</span>';
+}
+</script>
+{% endblock %}

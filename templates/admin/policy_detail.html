@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}{{ policy.title }} — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="gap-row mb1">
+      <span class="text-mono" style="color:var(--faint)">{{ policy.policy_id }}</span>
+      <span class="pill pill-{{ policy.status }}">{{ policy.status.replace('_',' ') }}</span>
+      <span class="pill pill-{{ policy.priority }}">{{ policy.priority }}</span>
+      {% if policy.is_mandatory %}<span class="pill pill-mandatory">Mandatory</span>{% endif %}
+    </div>
+    <h1>{{ policy.title }}</h1>
+    <p>{{ policy.description or 'No description provided.' }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('policy_ai.ai_assistant', policy_id=policy.id) }}" class="btn btn-secondary">✦ AI Assistant</a>
+    <a href="{{ url_for('admin.policy_edit', policy_id=policy.id) }}" class="btn btn-secondary">Edit metadata</a>
+    <a href="{{ url_for('admin.version_create', policy_id=policy.id) }}" class="btn btn-primary">+ New version</a>
+  </div>
+</div>
+
+<div class="stat-grid mb2" style="grid-template-columns:repeat(5,1fr)">
+  <div class="stat-card"><div class="stat-val">{{ versions|length }}</div><div class="stat-label">Versions</div></div>
+  <div class="stat-card"><div class="stat-val">{{ policy.view_count }}</div><div class="stat-label">Views</div></div>
+  <div class="stat-card"><div class="stat-val">{{ ack_count }}</div><div class="stat-label">Acknowledged</div></div>
+  <div class="stat-card"><div class="stat-val">{{ total_employees }}</div><div class="stat-label">Total employees</div></div>
+  <div class="stat-card {% if expiry_days is not none and expiry_days < 30 %}red{% endif %}">
+    <div class="stat-val">{{ expiry_days if expiry_days is not none else '∞' }}</div>
+    <div class="stat-label">Days to expiry</div>
+  </div>
+</div>
+
+<div class="grid2 mb2">
+  <!-- Current content -->
+  <div>
+    {% set active_ver = policy.versions.filter_by(is_active=True).first() %}
+    {% if active_ver %}
+    <div class="card mb2">
+      <div class="card-label">Current content — {{ active_ver.version_label }}</div>
+      <div class="policy-content" style="max-height:400px;overflow-y:auto">{{ active_ver.content }}</div>
+      {% if active_ver.summary %}
+      <div class="mt2" style="font-size:13px;color:var(--ink2)"><strong>Summary:</strong> {{ active_ver.summary }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="card">
+      <div class="card-label">Metadata</div>
+      <table style="font-size:13px">
+        {% macro meta_row(label, val) %}<tr><td style="padding:.35rem .5rem;color:var(--faint);white-space:nowrap;width:130px">{{ label }}</td><td style="padding:.35rem .5rem">{{ val or '—' }}</td></tr>{% endmacro %}
+        {{ meta_row('Author', policy.author.name if policy.author else '—') }}
+        {{ meta_row('Category', policy.category.name if policy.category else '—') }}
+        {{ meta_row('Department', policy.department.name if policy.department else '—') }}
+        {{ meta_row('Effective date', policy.effective_date.isoformat() if policy.effective_date else '—') }}
+        {{ meta_row('Review date', policy.review_date.isoformat() if policy.review_date else '—') }}
+        {{ meta_row('Expiry date', policy.expiry_date.isoformat() if policy.expiry_date else '—') }}
+        {{ meta_row('Confidentiality', policy.confidentiality) }}
+        {{ meta_row('Created', policy.created_at.strftime('%d %b %Y')) }}
+        {{ meta_row('Last updated', policy.updated_at.strftime('%d %b %Y %H:%M')) }}
+      </table>
+      {% if policy.tags %}
+      <div class="mt2">{% for t in policy.tags %}<span class="tag-chip">{{ t.name }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <!-- Workflow actions -->
+    <div class="card mb2">
+      <div class="card-label">Workflow actions</div>
+      <div class="gap-row" style="flex-direction:column;align-items:flex-start">
+        {% if policy.status == 'draft' %}
+          {% if workflow_engine_active %}
+          <form method="POST" action="{{ url_for('workflow.submit_workflow', policy_id=policy.id) }}" style="width:100%">
+            <button type="submit" class="btn btn-primary" style="width:100%">Submit for review (workflow)</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('admin.submit_for_review', policy_id=policy.id) }}" style="width:100%">
+            <button type="submit" class="btn btn-primary" style="width:100%">Submit for HR review</button>
+          </form>
+          {% endif %}
+        {% endif %}
+        {% if policy.status in ['draft','hr_review','legal_review','pending_approval'] %}
+        <form method="POST" action="{{ url_for('admin.policy_publish', policy_id=policy.id) }}" style="width:100%">
+          <button type="submit" class="btn btn-amber" style="width:100%" onclick="return confirm('Publish this policy now?')">Publish directly</button>
+        </form>
+        {% endif %}
+        {% if policy.status == 'active' %}
+        <form method="POST" action="{{ url_for('admin.policy_archive', policy_id=policy.id) }}" style="width:100%">
+          <button type="submit" class="btn btn-secondary" style="width:100%">Archive policy</button>
+        </form>
+        {% endif %}
+        {% if policy.status == 'archived' %}
+        <form method="POST" action="{{ url_for('admin.policy_restore', policy_id=policy.id) }}" style="width:100%">
+          <button type="submit" class="btn btn-secondary" style="width:100%">Restore to draft</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('admin.policy_duplicate', policy_id=policy.id) }}" style="width:100%">
+          <button type="submit" class="btn btn-ghost" style="width:100%">Duplicate policy</button>
+        </form>
+        {% if versions|length >= 2 %}
+        <a href="{{ url_for('admin.version_compare', policy_id=policy.id) }}" class="btn btn-ghost" style="width:100%;text-align:center">Compare versions</a>
+        {% endif %}
+        <form method="POST" action="{{ url_for('admin.policy_delete', policy_id=policy.id) }}" style="width:100%">
+          <button type="submit" class="btn btn-danger" style="width:100%" onclick="return confirm('Permanently delete this policy and all its versions? This cannot be undone.')">Delete permanently</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Approval workflow -->
+    {% if not workflow_engine_active and approvals %}
+    <div class="card mb2">
+      <div class="card-label">Approval workflow</div>
+      {% for a in approvals %}
+      <div style="display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--rule)">
+        <span class="pill {% if a.status == 'approved' %}pill-active{% elif a.status == 'rejected' %}pill-rejected{% elif a.status == 'pending' %}pill-draft{% else %}pill-archived{% endif %}" style="flex-shrink:0">{{ a.status }}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13.5px">{{ a.stage.replace('_',' ').title() }}</div>
+          <div style="font-size:12px;color:var(--faint)">{% if a.comment %}{{ a.comment }}{% endif %}</div>
+        </div>
+        {% if a.status == 'pending' and current_user.can_manage_policies() %}
+        <div style="display:flex;gap:.4rem">
+          <form method="POST" action="{{ url_for('admin.approval_act', approval_id=a.id) }}" style="display:inline">
+            <input type="hidden" name="action" value="approve">
+            <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+          </form>
+          <form method="POST" action="{{ url_for('admin.approval_act', approval_id=a.id) }}" style="display:inline">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if workflow_engine_active and workflow_stages %}
+    <div class="card mb2">
+      <div class="card-label">Approval workflow <a href="{{ url_for('workflow.workflow_analytics') }}" class="text-faint" style="font-size:11px;font-weight:400;float:right">Analytics →</a></div>
+      {% for s in workflow_stages %}
+      <div style="padding:.65rem 0;border-bottom:1px solid var(--rule)">
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+          <span class="pill {% if s.status == 'approved' %}pill-active{% elif s.status == 'rejected' %}pill-rejected{% elif s.status == 'pending' %}pill-draft{% elif s.status == 'skipped' %}pill-archived{% else %}pill-archived{% endif %}">{{ s.status }}</span>
+          <span style="font-weight:600;font-size:13.5px">{{ s.name }}</span>
+          <span class="text-mono" style="font-size:10.5px;color:var(--faint)">{{ s.approval_mode }}</span>
+          {% if s.escalated %}<span class="pill pill-critical" style="font-size:9px">Escalated</span>
+          {% elif s.is_overdue %}<span class="pill pill-high" style="font-size:9px">Overdue</span>
+          {% elif s.sla_due_at and s.status == 'pending' %}<span class="text-faint" style="font-size:11px">Due {{ s.sla_due_at.strftime('%d %b %H:%M') }}</span>{% endif %}
+        </div>
+        {% if s.actions %}
+        <div style="margin-top:.4rem;font-size:12px;color:var(--ink2)">
+          Approvers: {% for a in s.actions %}{{ a.eligible_display }}{% if a.status != 'pending' %} ({{ a.status }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+        {% if s.status == 'pending' and s.can_user_act(current_user) %}
+        <div style="display:flex;gap:.4rem;margin-top:.5rem">
+          <form method="POST" action="{{ url_for('workflow.act_on_stage', stage_id=s.id) }}" style="display:inline">
+            <input type="hidden" name="action" value="approve">
+            <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+          </form>
+          <form method="POST" action="{{ url_for('workflow.act_on_stage', stage_id=s.id) }}" style="display:inline">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Version timeline -->
+    <div class="card">
+      <div class="card-label">Version history</div>
+      <div class="timeline mt1">
+        {% for v in versions %}
+        <div class="tl-item">
+          <div class="tl-dot {% if v.is_active %}active{% endif %}"></div>
+          <div class="tl-label">{{ v.created_at.strftime('%d %b %Y') }} {% if v.created_by %}by {{ v.created_by.name }}{% endif %}</div>
+          <div class="tl-title">{{ v.version_label }} {% if v.is_active %}<span class="pill pill-active">Current</span>{% else %}<span class="pill pill-archived">Superseded</span>{% endif %}</div>
+          {% if v.summary %}<div class="tl-sub">{{ v.summary }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

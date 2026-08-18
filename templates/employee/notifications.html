@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Notifications — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Notifications</h1></div></div>
+{% if notifs %}
+<div style="display:flex;flex-direction:column;gap:.6rem">
+  {% for n in notifs %}
+  <div class="card" style="padding:.9rem 1.1rem;border-left:3px solid {% if n.type == 'mandatory_read' %}var(--red3){% elif n.type == 'new_policy' %}var(--archive){% else %}var(--amber){% endif %}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+      <div>
+        <div style="font-weight:600;font-size:14px">{{ n.title }}</div>
+        {% if n.message %}<div style="font-size:13px;color:var(--ink2);margin-top:.25rem">{{ n.message }}</div>{% endif %}
+        <div class="text-mono" style="color:var(--faint);margin-top:.4rem">{{ n.created_at.strftime('%d %b %Y at %H:%M') }}</div>
+      </div>
+      {% if n.link %}<a href="{{ n.link }}" class="btn btn-sm btn-secondary" style="flex-shrink:0">View →</a>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">No notifications</div><div class="empty-sub">You're all caught up!</div></div>
+{% endif %}
+{% endblock %}

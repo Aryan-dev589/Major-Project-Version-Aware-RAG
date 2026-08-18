@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Compliance Report — {{ generated_at }}</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 820px; margin: 40px auto; color: #1a1a1a; line-height: 1.5; }
+  h1 { font-size: 26px; border-bottom: 3px solid #2f5233; padding-bottom: 10px; }
+  h2 { font-size: 16px; color: #2f5233; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .meta { color: #666; font-size: 12.5px; margin-bottom: 20px; }
+  .score { font-size: 44px; font-weight: bold; color: #2f5233; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e0d5; }
+  th { color: #8a7550; font-weight: 600; text-transform: uppercase; font-size: 10.5px; }
+  .gap { color: #b23a48; font-weight: 600; }
+  .ok { color: #2f5233; font-weight: 600; }
+  .print-btn { padding: 8px 20px; background: #2f5233; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  <h1>Compliance & Audit Readiness Report</h1>
+  <div class="meta">Generated {{ generated_at.strftime('%d %B %Y') }} · Policy Ledger</div>
+
+  <p>Audit Readiness Score: <span class="score">{{ readiness_score }}/100</span></p>
+  <table>
+    <tr><th>Framework coverage</th><th>Mandatory ack rate</th><th>No expired policies</th><th>Reviews on schedule</th><th>AI risk (inverse)</th></tr>
+    <tr><td>{{ sub_scores.framework_coverage }}%</td><td>{{ sub_scores.ack_score }}%</td><td>{{ sub_scores.expiry_score }}%</td><td>{{ sub_scores.review_score }}%</td><td>{{ sub_scores.ai_risk_score }}%</td></tr>
+  </table>
+
+  <h2>Framework Coverage</h2>
+  <table>
+    <tr><th>Framework</th><th>Policies mapped</th><th>Status</th></tr>
+    {% for fd in framework_data %}
+    <tr><td>{{ fd.framework.name }}</td><td>{{ fd.policy_count }}</td><td class="{{ 'gap' if fd.gap else 'ok' }}">{{ 'No coverage' if fd.gap else 'Covered' }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Expired Policies ({{ expired_policies|length }})</h2>
+  {% if expired_policies %}
+  <table>
+    <tr><th>Policy</th><th>Expired on</th></tr>
+    {% for p in expired_policies %}<tr><td>{{ p.title }}</td><td>{{ p.expiry_date.strftime('%d %b %Y') }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<p>None — all active policies are within their validity window.</p>{% endif %}
+
+  <h2>Outstanding Mandatory Acknowledgements ({{ violations|length }} polic{{ 'y' if violations|length == 1 else 'ies' }})</h2>
+  {% if violations %}
+  <table>
+    <tr><th>Policy</th><th>Acknowledged</th><th>Outstanding</th></tr>
+    {% for v in violations %}<tr><td>{{ v.policy.title }}</td><td>{{ v.acked }}/{{ v.total }}</td><td>{{ v.outstanding }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<p>None — all mandatory policies are fully acknowledged.</p>{% endif %}
+
+  <h2>AI-Flagged Compliance Issues ({{ ai_issues|length }})</h2>
+  {% if ai_issues %}
+  <table>
+    <tr><th>Policy</th><th>Issue</th></tr>
+    {% for item in ai_issues %}<tr><td>{{ item.policy.title }}</td><td>{{ item.issue }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<p>No AI-flagged compliance issues on record.</p>{% endif %}
+
+</body>
+</html>

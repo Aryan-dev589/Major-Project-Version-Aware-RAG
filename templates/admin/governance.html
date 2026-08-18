@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Governance Health — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Governance Health Score</h1>
+    <p>Portfolio-wide view of policy risk, staleness, duplication, and single-owner exposure — separate from audit-framework readiness.</p>
+  </div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card" style="text-align:center;padding:2rem">
+    <div class="card-label">Governance Health Index</div>
+    <div style="font-family:var(--font-serif);font-size:48px;font-weight:700;color:{% if health_index >= 80 %}var(--archive){% elif health_index >= 50 %}var(--amber){% else %}var(--red){% endif %}">
+      {{ health_index }}<span style="font-size:20px;color:var(--faint)">/100</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:.5rem">Across {{ active_policy_count }} active polic{{ 'y' if active_policy_count == 1 else 'ies' }} · {{ reviewed_count }} AI-reviewed</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Score breakdown</div>
+    {% for label, key, weight in [('AI risk (inverse)','risk','35%'),('Review freshness','freshness','25%'),('Duplicate/conflict-free','cleanliness','20%'),('Ownership resilience','ownership','20%')] %}
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;font-size:12.5px">
+      <span style="flex:1">{{ label }} <span style="color:var(--faint)">({{ weight }})</span></span>
+      <span class="text-mono" style="font-weight:600">{{ sub_scores[key] }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card {% if overdue_count %}amber{% endif %}"><div class="stat-val">{{ overdue_count }}</div><div class="stat-label">Overdue for review</div></div>
+  <div class="stat-card {% if expired_count %}red{% endif %}"><div class="stat-val">{{ expired_count }}</div><div class="stat-label">Expired but still active</div></div>
+  <div class="stat-card {% if duplicate_conflict_count %}amber{% endif %}"><div class="stat-val">{{ duplicate_conflict_count }}</div><div class="stat-label">Duplicate/conflict flags</div></div>
+  <div class="stat-card {% if single_owner_count %}amber{% endif %}"><div class="stat-val">{{ single_owner_count }}</div><div class="stat-label">No backup reviewer/approver</div></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Department heatmap</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Department</th><th>Active policies</th><th>Avg AI risk</th><th>Overdue review</th><th>Single-owner</th></tr></thead>
+      <tbody>
+        {% for row in dept_rows %}
+        <tr>
+          <td class="td-title">{{ row.department.name if row.department else 'Company-wide (no dept.)' }}</td>
+          <td>{{ row.policy_count }}</td>
+          <td>
+            {% if row.avg_risk is not none %}
+            <span style="color:{% if row.avg_risk >= 60 %}var(--red){% elif row.avg_risk >= 35 %}var(--amber){% else %}var(--green){% endif %};font-weight:600">{{ row.avg_risk }}</span>
+            {% else %}<span style="color:var(--faint)">not reviewed</span>{% endif %}
+          </td>
+          <td>{{ row.overdue_count }}</td>
+          <td>{{ row.single_owner_count }}</td>
+        </tr>
+        {% endfor %}
+        {% if not dept_rows %}
+        <tr><td colspan="5" style="color:var(--faint);text-align:center;padding:1.5rem">No active policies yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Top at-risk policies</div>
+  <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.75rem">
+    {% for row in at_risk %}
+    <div style="padding:.75rem 0;border-bottom:1px solid var(--rule)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+        <a href="{{ url_for('admin.policy_detail', policy_id=row.policy.id) }}" style="font-weight:600;font-size:14px">{{ row.policy.title }}</a>
+        <span class="text-mono" style="color:var(--faint);flex-shrink:0">{{ row.policy.policy_id }}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink2);margin-top:.35rem">{{ row.reasons|join(' · ') }}</div>
+    </div>
+    {% else %}
+    <div style="color:var(--faint);text-align:center;padding:1.5rem">No flagged policies — portfolio looks healthy.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

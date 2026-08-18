@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Contradiction Radar — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Contradiction Radar</h1>
+    <p>Continuous monitoring across every same-category active policy pair — not the one-off AI Review check, an always-running scan that catches drift as policies get edited independently over time.</p>
+  </div>
+</div>
+
+{% if not has_ever_scanned %}
+<div class="alert alert-warning mb2">
+  No scan has run yet. Run <span class="text-mono">python scripts/scan_contradictions.py</span> (or schedule it nightly via cron / Task Scheduler) to populate this dashboard.
+</div>
+{% endif %}
+
+<div class="stat-grid mb3">
+  <div class="stat-card {% if open_flags %}red{% endif %}"><div class="stat-val">{{ open_flags|length }}</div><div class="stat-label">Open contradictions</div></div>
+  <div class="stat-card"><div class="stat-val">{{ resolved_flags|length }}</div><div class="stat-label">Resolved / dismissed (recent)</div></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Open flags</div>
+  <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:.75rem">
+    {% for flag in open_flags %}
+    <div style="padding:.85rem 0;border-bottom:1px solid var(--rule)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div>
+          <a href="{{ url_for('admin.policy_detail', policy_id=flag.policy_a_id) }}" style="font-weight:600">{{ flag.policy_a.title }}</a>
+          <span style="color:var(--faint)"> &nbsp;⟷&nbsp; </span>
+          <a href="{{ url_for('admin.policy_detail', policy_id=flag.policy_b_id) }}" style="font-weight:600">{{ flag.policy_b.title }}</a>
+        </div>
+        <form method="POST" action="{{ url_for('contradiction_radar.dismiss', flag_id=flag.id) }}">
+          <button type="submit" class="btn btn-sm btn-ghost">Dismiss as false positive</button>
+        </form>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink2);margin-top:.4rem">{{ flag.description }}</div>
+      <div class="text-mono" style="font-size:11px;color:var(--faint);margin-top:.3rem">
+        First detected {{ flag.detected_at.strftime('%Y-%m-%d') }} · last confirmed {{ flag.last_confirmed_at.strftime('%Y-%m-%d') }}
+      </div>
+    </div>
+    {% else %}
+    <div style="color:var(--faint);text-align:center;padding:1.5rem">0 found{% if not has_ever_scanned %} — configure an LLM provider for deeper checks, then run a scan{% else %} — no contradictions on the latest scan{% endif %}.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Recently resolved / dismissed</div>
+  <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem">
+    {% for flag in resolved_flags %}
+    <div style="padding:.5rem 0;border-bottom:1px solid var(--rule);font-size:12.5px;color:var(--ink2)">
+      <span style="font-weight:600">{{ flag.policy_a.title }}</span> ⟷ <span style="font-weight:600">{{ flag.policy_b.title }}</span>
+      <span class="pill {% if flag.status == 'dismissed' %}pill-archived{% else %}pill-active{% endif %}" style="margin-left:.5rem">{{ flag.status }}</span>
+    </div>
+    {% else %}
+    <div style="color:var(--faint);text-align:center;padding:1rem">Nothing here yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

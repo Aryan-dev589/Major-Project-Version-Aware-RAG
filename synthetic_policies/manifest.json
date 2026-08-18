@@ -1,0 +1,13 @@
+{
+  "count": 1,
+  "generated_documents": [
+    {
+      "document_id": "POL-REMOTE-GOV-2026-01",
+      "title": "Remote Work Governance and Allowance Standard",
+      "html_path": "C:\\Users\\Aryan\\Documents\\policy-ledger-v2\\synthetic_policies\\html\\POL-REMOTE-GOV-2026-01.html",
+      "pdf_path": null,
+      "ground_truth_path": "C:\\Users\\Aryan\\Documents\\policy-ledger-v2\\synthetic_policies\\ground_truth\\POL-REMOTE-GOV-2026-01.json",
+      "question_count": 5
+    }
+  ]
+}

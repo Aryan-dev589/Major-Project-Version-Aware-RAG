@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}My Action Items — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>My Action Items</h1><p>Tasks assigned to you across all meetings</p></div>
+</div>
+
+{% if items %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Description</th><th>Meeting</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for a in items %}
+      <tr>
+        <td>{{ a.description }}</td>
+        <td><a href="{{ url_for('meetings.meeting_detail', meeting_id=a.meeting_id) }}">{{ a.meeting.title }}</a></td>
+        <td class="td-mono">
+          {% if a.due_date %}
+            {{ a.due_date.strftime('%d %b %Y') }}
+            {% set du = days_until(a.due_date) %}
+            {% if a.status != 'done' and du is not none and du < 0 %}<span class="pill pill-critical" style="margin-left:.4rem">Overdue</span>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td><span class="pill pill-{{ a.priority }}">{{ a.priority }}</span></td>
+        <td>
+          <select onchange="updateStatus({{ a.id }}, this.value, this)" style="font-size:12px;padding:.3rem .5rem;border:1px solid var(--rule2);border-radius:var(--r)">
+            {% for s in ['pending','in_progress','done'] %}<option value="{{ s }}" {% if s == a.status %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>{% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">No action items assigned to you</div><div class="empty-sub">Items assigned to you in meetings will show up here.</div></div>
+{% endif %}
+
+<script>
+async function updateStatus(itemId, status, el) {
+  await fetch(`/action-items/${itemId}/status`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+    body: 'status=' + encodeURIComponent(status)
+  });
+  showToast('Status updated');
+}
+</script>
+{% endblock %}

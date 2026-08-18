@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Quiz Results</h1><p>{{ policy.title }}</p></div>
+</div>
+
+<div class="card mb3" style="text-align:center;padding:2rem">
+  <div style="font-family:var(--font-serif);font-size:42px;font-weight:700">{{ attempt.score }}/{{ attempt.total }}</div>
+  <div style="font-size:14px;color:var(--ink2);margin:.4rem 0 1rem">{{ attempt.percentage }}%</div>
+  {% if attempt.passed %}<span class="pill pill-active" style="font-size:13px">✓ Passed</span>
+  {% else %}<span class="pill pill-critical" style="font-size:13px">Not passed — 70% needed</span>{% endif %}
+</div>
+
+{% for q in quiz %}
+{% set outer_idx = loop.index0 %}
+{% set is_correct = answers[outer_idx] == q.correct_index %}
+<div class="card mb2" style="border-left:3px solid {% if is_correct %}var(--archive){% else %}var(--red3){% endif %}">
+  <div style="font-weight:600;font-size:13.5px;margin-bottom:.5rem">{{ loop.index }}. {{ q.question }}</div>
+  {% for opt in q.options %}
+  <div style="font-size:13px;padding:.2rem 0;{% if loop.index0 == q.correct_index %}color:var(--archive);font-weight:600{% elif loop.index0 == answers[outer_idx] %}color:var(--red){% endif %}">
+    {{ opt }}
+    {% if loop.index0 == q.correct_index %} ✓ Correct answer
+    {% elif loop.index0 == answers[outer_idx] %} ✕ Your answer{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<a href="{{ url_for('employee.policy_view', policy_id=policy.id) }}" class="btn btn-secondary">← Back to policy</a>
+{% if attempt.passed %}
+<a href="{{ url_for('employee.certificate', policy_id=policy.id) }}" class="btn btn-primary">🎓 Get Certificate</a>
+{% else %}
+<a href="{{ url_for('employee.take_quiz', policy_id=policy.id) }}" class="btn btn-primary">Retake Quiz</a>
+{% endif %}
+{% endblock %}

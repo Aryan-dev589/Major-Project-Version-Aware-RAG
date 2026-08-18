@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}What-If Simulator — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>What-If Simulator</h1>
+    <p>Describe something you're considering doing — get a clear verdict, not just a paragraph to interpret yourself.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('what_if.history') }}" class="btn btn-secondary">My history</a>
+  </div>
+</div>
+
+<div class="card mb2">
+  <form id="whatIfForm" method="POST">
+    <label class="card-label" style="display:block;margin-bottom:.5rem">DESCRIBE YOUR SCENARIO</label>
+    <textarea id="scenarioInput" name="scenario" rows="3" maxlength="800" placeholder='e.g. "I want to work remotely from another country for 6 weeks" or "Can I expense a personal laptop under $500?"'
+      style="width:100%;padding:.7rem .85rem;border:1px solid var(--rule2);border-radius:4px;font-size:14.5px;font-family:var(--font-sans);background:var(--paper);resize:vertical">{{ scenario }}</textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:.75rem;gap:.75rem">
+      <button type="button" id="clearWhatIfBtn" class="btn btn-secondary">Clear</button>
+      <button type="submit" id="whatIfSubmitBtn" class="btn btn-primary">Check against policy →</button>
+    </div>
+  </form>
+</div>
+
+<div id="whatIfResultContainer" aria-live="polite"></div>
+
+<script>
+const whatIfForm = document.getElementById('whatIfForm');
+const scenarioInput = document.getElementById('scenarioInput');
+const resultContainer = document.getElementById('whatIfResultContainer');
+const submitBtn = document.getElementById('whatIfSubmitBtn');
+const clearBtn = document.getElementById('clearWhatIfBtn');
+
+function verdictMeta(verdict) {
+  const map = {
+    compliant: { label: 'Compliant', bg: 'var(--green2)', fg: 'var(--green)' },
+    not_compliant: { label: 'Not Compliant', bg: 'var(--red2)', fg: 'var(--red)' },
+    depends: { label: 'Depends', bg: 'var(--amber2)', fg: 'var(--amber)' },
+    unclear: { label: 'Unclear', bg: 'var(--blue2)', fg: 'var(--blue)' },
+  };
+  return map[verdict] || map.unclear;
+}
+
+function renderThinkingIndicator() {
+  const card = document.createElement('div');
+  card.id = 'liveWhatIfBox';
+  card.className = 'card mb2';
+  card.style.borderLeft = '3px solid var(--blue)';
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.75rem;min-height:56px">
+      <div style="font-size:13px;color:var(--ink2);font-weight:600;letter-spacing:.04em;text-transform:uppercase">Checking policy</div>
+      <div style="display:flex;gap:.25rem;align-items:center;padding-top:2px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--blue);display:inline-block;animation:whatifPulse 1s infinite ease-in-out"></span>
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--blue);display:inline-block;animation:whatifPulse 1s .15s infinite ease-in-out"></span>
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--blue);display:inline-block;animation:whatifPulse 1s .3s infinite ease-in-out"></span>
+      </div>
+    </div>
+    <div class="answer-body" style="margin-top:.5rem;color:var(--ink2);line-height:1.6;white-space:pre-wrap"></div>
+  `;
+  resultContainer.appendChild(card);
+  return card;
+}
+
+function appendWhatIfText(text) {
+  let box = document.getElementById('liveWhatIfBox');
+  if (!box) box = renderThinkingIndicator();
+  const target = box.querySelector('.answer-body') || box;
+  target.textContent = (target.textContent || '') + text;
+}
+
+function renderWhatIfCard(result) {
+  const meta = verdictMeta(result.verdict);
+  const citations = Array.isArray(result.citations) ? result.citations : [];
+  const actions = Array.isArray(result.required_actions) ? result.required_actions : [];
+
+  resultContainer.innerHTML = `
+    <div class="card mb2" style="border-left:3px solid ${meta.fg}">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span style="background:${meta.bg};color:${meta.fg};font-weight:700;font-size:13px;padding:.35rem .8rem;border-radius:20px">${meta.label}</span>
+          <span class="text-mono" style="font-size:11.5px;color:var(--faint)">Confidence: ${result.confidence || 0}%</span>
+        </div>
+        ${result.flagged_for_hr ? '<span class="pill pill-mandatory" title="Ambiguous or higher-risk scenarios are routed to HR for review">🚩 Flagged for HR review</span>' : ''}
+      </div>
+      <div style="margin-top:1rem;font-size:15px;line-height:1.6">${String(result.explanation || '').replace(/\n/g, '<br>')}</div>
+      ${actions.length ? `
+        <div style="margin-top:1rem">
+          <div class="card-label" style="margin-bottom:.4rem">REQUIRED NEXT STEPS</div>
+          <ul style="padding-left:1.2rem;font-size:13.5px;line-height:1.7">
+            ${actions.map(a => `<li>${a}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+      ${citations.length ? `
+        <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--rule2)">
+          <div class="card-label" style="margin-bottom:.5rem">BASED ON</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            ${citations.map(c => `
+              <div style="font-size:12.5px;color:var(--ink2);border:1px solid var(--rule2);border-radius:8px;padding:.6rem .7rem;background:rgba(255,255,255,0.02)">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap">
+                  <div>
+                    ${c.policy_id ? `<a href="/policy/${c.policy_id}" style="font-weight:600;color:var(--link)">${c.policy_name}</a>` : `<span style="font-weight:600">${c.policy_name}</span>`}
+                    <span class="text-mono" style="color:var(--faint)">v${c.version || 'N/A'}</span>
+                  </div>
+                  ${typeof c.relevance_score !== 'undefined' ? `<span class="text-mono" style="font-size:11px;color:var(--faint)">match ${Number(c.relevance_score).toFixed(2)}</span>` : ''}
+                </div>
+                <div style="margin-top:.3rem;color:var(--ink2)">Section: ${c.section || 'General'}${c.page ? ` · Page ${c.page}` : ''}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+      <div style="margin-top:.75rem;font-size:11.5px;color:var(--faint)">
+        This is decision support, not a formal ruling — for anything with real consequences, confirm with HR before acting.
+      </div>
+    </div>
+  `;
+}
+
+whatIfForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
+  const scenario = scenarioInput.value.trim();
+  if (!scenario) return;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Checking…';
+  resultContainer.innerHTML = '';
+  renderThinkingIndicator();
+
+  try {
+    const response = await fetch('/what-if/stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ scenario })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let finalResult = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const payload = JSON.parse(line.replace(/^data:\s*/, ''));
+          if (payload.text) {
+            appendWhatIfText(payload.text);
+          }
+          if (payload.done && payload.result) {
+            finalResult = payload.result;
+          }
+        } catch (err) {
+          // Ignore partial frames until the full JSON is available.
+        }
+      }
+    }
+
+    if (buffer.trim().startsWith('data: ')) {
+      try {
+        const payload = JSON.parse(buffer.trim().replace(/^data:\s*/, ''));
+        if (payload.text) appendWhatIfText(payload.text);
+        if (payload.done && payload.result) finalResult = payload.result;
+      } catch (err) {}
+    }
+
+    if (finalResult) {
+      renderWhatIfCard(finalResult);
+    }
+  } catch (err) {
+    resultContainer.innerHTML = `
+      <div class="card mb2" style="border-left:3px solid var(--red)">
+        <div style="font-size:15px;line-height:1.6;color:var(--red)">The simulator could not complete this check right now. Please try again.</div>
+      </div>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Check against policy →';
+  }
+});
+
+clearBtn.addEventListener('click', function () {
+  scenarioInput.value = '';
+  resultContainer.innerHTML = '';
+  scenarioInput.focus();
+});
+</script>
+
+<style>
+@keyframes whatifPulse {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-1px); }
+}
+</style>
+
+{% if result %}
+{% set verdict_meta = {
+  'compliant':     {'label': 'Compliant',      'bg': 'var(--green2)',  'fg': 'var(--green)'},
+  'not_compliant': {'label': 'Not Compliant',  'bg': 'var(--red2)',    'fg': 'var(--red)'},
+  'depends':       {'label': 'Depends',        'bg': 'var(--amber2)',  'fg': 'var(--amber)'},
+  'unclear':       {'label': 'Unclear',        'bg': 'var(--blue2)',   'fg': 'var(--blue)'},
+} %}
+{% set vm = verdict_meta.get(result.verdict, verdict_meta['unclear']) %}
+<div class="card mb2" style="border-left:3px solid {{ vm.fg }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span style="background:{{ vm.bg }};color:{{ vm.fg }};font-weight:700;font-size:13px;padding:.35rem .8rem;border-radius:20px">{{ vm.label }}</span>
+      <span class="text-mono" style="font-size:11.5px;color:var(--faint)">Confidence: {{ result.confidence }}%</span>
+    </div>
+    {% if result.flagged_for_hr %}
+    <span class="pill pill-mandatory" title="Ambiguous or higher-risk scenarios are routed to HR for review">🚩 Flagged for HR review</span>
+    {% endif %}
+  </div>
+
+  <div style="margin-top:1rem;font-size:15px;line-height:1.6">{{ result.explanation }}</div>
+
+  {% if result.required_actions %}
+  <div style="margin-top:1rem">
+    <div class="card-label" style="margin-bottom:.4rem">REQUIRED NEXT STEPS</div>
+    <ul style="padding-left:1.2rem;font-size:13.5px;line-height:1.7">
+      {% for a in result.required_actions %}<li>{{ a }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if result.citations %}
+  <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--rule2)">
+    <div class="card-label" style="margin-bottom:.5rem">BASED ON</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      {% for c in result.citations %}
+      <div style="font-size:12.5px;color:var(--ink2)">
+        {% if c.policy_id %}<a href="{{ url_for('employee.policy_view', policy_id=c.policy_id) }}" style="font-weight:600">{{ c.policy_name }}</a>{% else %}<span style="font-weight:600">{{ c.policy_name }}</span>{% endif %}
+        <span class="text-mono" style="color:var(--faint)">v{{ c.version }}</span> · Section: {{ c.section }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:.75rem;font-size:11.5px;color:var(--faint)">
+    This is decision support, not a formal ruling — for anything with real consequences, confirm with HR before acting.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

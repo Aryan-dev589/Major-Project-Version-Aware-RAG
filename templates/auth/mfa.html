@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MFA Verification — Policy Ledger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f4f0e6;--paper2:#faf8f2;--ink:#1a1f1c;--ink2:#4a504a;--faint:#8a8f88;--rule:#d6d0be;--rule2:#c2bba8;--archive:#2a4a38;--red:#8c3020;--red2:#f0e0dc}
+html,body{min-height:100vh;font-family:'Inter',sans-serif;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:2rem}
+.card{background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:2.5rem;max-width:380px;width:100%;text-align:center;box-shadow:0 2px 4px rgba(26,31,28,.06),0 16px 48px rgba(26,31,28,.10)}
+.icon{font-size:36px;margin-bottom:.75rem}
+h1{font-family:'Source Serif 4',serif;font-size:22px;font-weight:700;margin-bottom:.35rem}
+.sub{font-size:13.5px;color:var(--ink2);margin-bottom:1.5rem;line-height:1.5}
+.email{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--faint)}
+.code-input{width:100%;text-align:center;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;letter-spacing:.2em;padding:.75rem;border:1px solid var(--rule2);border-radius:4px;background:var(--paper);color:var(--ink);margin:1rem 0}
+.code-input:focus{outline:none;border-color:var(--archive)}
+.btn{width:100%;padding:.68rem;background:var(--archive);color:#fff;border:none;border-radius:4px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer}
+.btn:hover{opacity:.88}
+.error{background:var(--red2);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:.6rem .85rem;font-size:13px;margin-bottom:.85rem}
+.back{display:block;margin-top:1rem;font-size:13px;color:var(--archive)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--archive)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  <h1>Two-factor verification</h1>
+  <div class="sub">Enter the 6-digit code from your authenticator app<br><span class="email">{{ email }}</span></div>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <input class="code-input" type="text" name="code" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" autofocus>
+    <button type="submit" class="btn">Verify →</button>
+  </form>
+  <a href="{{ url_for('auth.login') }}" class="back">← Back to login</a>
+</div>
+</body>
+</html>

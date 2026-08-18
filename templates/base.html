@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Policy Ledger{% endblock %}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#f4f0e6;--paper2:#faf8f2;--ink:#1a1f1c;--ink2:#4a504a;--faint:#8a8f88;
+  --rule:#d6d0be;--rule2:#c2bba8;
+  --archive:#2a4a38;--archive2:#e0ebe4;--archive3:#1e3628;--archive4:#b0cfb8;
+  --red:#8c3020;--red2:#f0e0dc;--red3:#c04030;
+  --amber:#a07820;--amber2:#f2e8d0;
+  --blue:#2050a0;--blue2:#dce8f8;
+  --green:#207840;--green2:#dcf0e0;
+  --shadow:0 1px 3px rgba(26,31,28,.06),0 4px 16px rgba(26,31,28,.08);
+  --shadow2:0 2px 8px rgba(26,31,28,.10),0 12px 32px rgba(26,31,28,.12);
+  --r:4px;
+  --font-serif:'Source Serif 4',Georgia,serif;
+  --font-sans:'Inter',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+html,body{height:100%;font-family:var(--font-sans);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:var(--archive);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---- Shell ---- */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--archive3);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.page-body{flex:1;padding:2rem;max-width:1200px;width:100%}
+
+/* ---- Sidebar ---- */
+.s-brand{padding:1.25rem 1.1rem 1rem;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:.7rem}
+.s-mark{font-family:var(--font-serif);font-size:20px;font-weight:700;color:#fff;width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-name{font-family:var(--font-serif);font-weight:700;font-size:14.5px;color:#fff;line-height:1.2}
+.s-company{font-size:10.5px;color:rgba(255,255,255,.45);margin-top:1px}
+.s-nav{flex:1;padding:.5rem 0}
+.s-section{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);padding:.6rem 1.1rem .25rem}
+.s-item{display:flex;align-items:center;gap:.6rem;padding:.58rem 1.1rem;font-size:13px;font-weight:500;color:rgba(255,255,255,.65);cursor:pointer;border:none;background:none;width:100%;text-align:left;text-decoration:none;transition:background .12s,color .12s;border-left:2px solid transparent}
+.s-item:hover{background:rgba(255,255,255,.07);color:#fff;text-decoration:none}
+.s-item.active{background:rgba(255,255,255,.12);color:#fff;border-left-color:var(--archive4)}
+.s-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.s-icon svg{width:15px;height:15px}
+.icon{display:inline-block;vertical-align:-3px;flex-shrink:0}
+.s-badge{margin-left:auto;background:var(--red3);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:var(--font-mono)}
+.s-foot{padding:.85rem 1.1rem;border-top:1px solid rgba(255,255,255,.1)}
+.s-user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-user-role{font-size:10.5px;color:rgba(255,255,255,.4);text-transform:capitalize;margin-top:1px}
+.s-foot-links{display:flex;gap:.75rem;margin-top:.6rem}
+.s-foot-links a{font-size:11.5px;color:rgba(255,255,255,.4)}
+.s-foot-links a:hover{color:rgba(255,255,255,.85);text-decoration:none}
+
+/* ---- Topbar ---- */
+.topbar{background:var(--paper2);border-bottom:1px solid var(--rule);padding:.75rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:.85rem;flex:1}
+.search-bar{display:flex;align-items:center;gap:.5rem;background:var(--paper);border:1px solid var(--rule2);border-radius:var(--r);padding:.45rem .8rem;flex:1;max-width:420px}
+.search-bar input{border:none;background:transparent;font-size:13.5px;font-family:var(--font-sans);color:var(--ink);flex:1;outline:none}
+.search-bar input::placeholder{color:var(--faint)}
+.topbar-right{display:flex;align-items:center;gap:.85rem}
+.notif-btn{position:relative;background:none;border:1px solid var(--rule2);border-radius:var(--r);padding:.45rem .6rem;cursor:pointer;font-size:16px;color:var(--ink2);transition:all .15s}
+.notif-btn:hover{border-color:var(--archive);color:var(--archive)}
+.notif-badge{position:absolute;top:-5px;right:-5px;background:var(--red3);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;font-family:var(--font-mono)}
+
+/* ---- Cards ---- */
+.card{background:var(--paper2);border:1px solid var(--rule);border-radius:var(--r);padding:1.25rem;box-shadow:var(--shadow)}
+.card-title{font-family:var(--font-serif);font-weight:700;font-size:16px;margin-bottom:.35rem}
+.card-sub{font-size:13px;color:var(--ink2);line-height:1.5}
+.card-label{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:.7rem}
+
+/* ---- Stat cards ---- */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--paper2);border:1px solid var(--rule);border-radius:var(--r);padding:1.1rem 1.25rem;box-shadow:var(--shadow)}
+.stat-val{font-family:var(--font-mono);font-size:30px;font-weight:600;color:var(--archive);line-height:1}
+.stat-label{font-size:12px;color:var(--faint);margin-top:.35rem}
+.stat-card.red .stat-val{color:var(--red)}
+.stat-card.amber .stat-val{color:var(--amber)}
+.stat-card.blue .stat-val{color:var(--blue)}
+
+/* ---- Buttons ---- */
+.btn{font-family:var(--font-sans);font-size:13px;font-weight:600;border-radius:var(--r);cursor:pointer;padding:.58rem 1.1rem;border:1px solid transparent;transition:all .15s;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none}
+.btn:hover{text-decoration:none}
+.btn-primary{background:var(--archive);color:#fff;border-color:var(--archive)}.btn-primary:hover{background:var(--archive3)}
+.btn-secondary{background:var(--paper2);border-color:var(--rule2);color:var(--ink)}.btn-secondary:hover{border-color:var(--archive);color:var(--archive)}
+.btn-danger{background:var(--red2);border-color:var(--red);color:var(--red)}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-amber{background:var(--amber2);border-color:var(--amber);color:var(--amber)}.btn-amber:hover{background:var(--amber);color:#fff}
+.btn-sm{font-size:12px;padding:.38rem .75rem}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--ink2)}.btn-ghost:hover{background:var(--paper);border-color:var(--rule)}
+
+/* ---- Pills / badges ---- */
+.pill{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:2px;border:1px solid currentColor;display:inline-block;white-space:nowrap}
+.pill-active,.pill-published{color:var(--archive);background:var(--archive2)}
+.pill-draft{color:var(--amber);background:var(--amber2)}
+.pill-archived{color:var(--faint);background:var(--paper)}
+.pill-hr_review,.pill-legal_review,.pill-pending_approval{color:var(--blue);background:var(--blue2)}
+.pill-rejected{color:var(--red);background:var(--red2)}
+.pill-critical{color:var(--red);background:var(--red2)}
+.pill-high{color:var(--amber);background:var(--amber2)}
+.pill-medium{color:var(--blue);background:var(--blue2)}
+.pill-low{color:var(--faint);background:var(--paper)}
+.pill-mandatory{color:#fff;background:var(--red3);border-color:var(--red3)}
+
+/* ---- Table ---- */
+.table-wrap{background:var(--paper2);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:.65rem 1rem;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);border-bottom:1px solid var(--rule2);background:var(--paper);white-space:nowrap}
+td{padding:.75rem 1rem;border-bottom:1px solid var(--rule);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--paper)}
+.td-mono{font-family:var(--font-mono);font-size:11.5px;color:var(--faint)}
+.td-title{font-family:var(--font-serif);font-weight:600;font-size:14px}
+
+/* ---- Forms ---- */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
+.field label,.field-label{font-size:12px;font-weight:600;color:var(--ink2)}
+.field input,.field select,.field textarea{padding:.58rem .8rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:14px;font-family:var(--font-sans);background:var(--paper);color:var(--ink);transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--archive);background:var(--paper2)}
+.field textarea{resize:vertical;line-height:1.55;font-family:var(--font-mono);font-size:13px}
+.field-hint{font-size:11px;color:var(--faint);line-height:1.4}
+.seg{display:inline-flex;border:1px solid var(--rule2);border-radius:var(--r);overflow:hidden}
+.seg-btn{font-size:12.5px;font-weight:600;padding:.4rem .9rem;background:var(--paper);border:none;border-right:1px solid var(--rule2);cursor:pointer;color:var(--ink2);transition:all .15s;font-family:var(--font-sans)}
+.seg-btn:last-child{border-right:none}
+.seg-btn.active{background:var(--archive);color:#fff}
+
+/* ---- Alerts / flash ---- */
+.flash-list{margin-bottom:1rem}
+.alert{padding:.75rem 1rem;border-radius:var(--r);font-size:13.5px;margin-bottom:.5rem;border-left:3px solid}
+.alert-success{background:var(--green2);border-color:var(--green);color:#1a3a20}
+.alert-warning{background:var(--amber2);border-color:var(--amber);color:#3a2800}
+.alert-danger,.alert-error{background:var(--red2);border-color:var(--red);color:#3a0808}
+.alert-info{background:var(--blue2);border-color:var(--blue);color:#081838}
+
+/* ---- Page header ---- */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.page-header-left h1{font-family:var(--font-serif);font-size:26px;font-weight:700;margin-bottom:.25rem}
+.page-header-left p{font-size:13.5px;color:var(--ink2)}
+.page-header-actions{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+
+/* ---- Empty state ---- */
+.empty{text-align:center;padding:3.5rem 1rem;color:var(--faint)}
+.empty-icon{font-size:32px;margin-bottom:.75rem;opacity:.5}
+.empty-title{font-family:var(--font-serif);font-size:18px;font-weight:600;color:var(--ink2);margin-bottom:.4rem}
+.empty-sub{font-size:13.5px}
+
+/* ---- Pagination ---- */
+.pagination{display:flex;gap:.35rem;align-items:center;margin-top:1rem;flex-wrap:wrap}
+.page-btn{font-family:var(--font-mono);font-size:12px;padding:.38rem .7rem;border:1px solid var(--rule2);border-radius:var(--r);background:var(--paper2);color:var(--ink2);cursor:pointer;text-decoration:none}
+.page-btn:hover{border-color:var(--archive);color:var(--archive);text-decoration:none}
+.page-btn.current{background:var(--archive);color:#fff;border-color:var(--archive)}
+
+/* ---- Diff viewer ---- */
+.diff-viewer{font-family:var(--font-mono);font-size:12.5px;line-height:1.6;white-space:pre-wrap;background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:1rem;overflow-x:auto;max-height:500px;overflow-y:auto}
+.diff-added{background:#d4f0d8;color:#1a4020;display:block}
+.diff-removed{background:#f8d8d4;color:#4a1008;display:block;text-decoration:line-through}
+.diff-equal{color:var(--ink2);display:block}
+
+/* ---- Version timeline ---- */
+.timeline{position:relative;padding-left:1.5rem}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1.5px;background:var(--rule2)}
+.tl-item{position:relative;margin-bottom:1.25rem}
+.tl-dot{position:absolute;left:-1.5rem;top:3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--archive);background:var(--paper2)}
+.tl-dot.active{background:var(--archive)}
+.tl-label{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-bottom:.2rem}
+.tl-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:.2rem}
+.tl-sub{font-size:12.5px;color:var(--ink2)}
+
+/* ---- Policy content viewer ---- */
+.policy-content{font-family:var(--font-serif);font-size:15.5px;line-height:1.75;color:var(--ink);background:var(--paper2);border:1px solid var(--rule);border-radius:var(--r);padding:2rem;white-space:pre-wrap}
+
+/* ---- Misc ---- */
+.divider{height:1px;background:var(--rule);margin:1.25rem 0}
+.text-faint{color:var(--faint)}
+.text-mono{font-family:var(--font-mono);font-size:12px}
+.gap-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+.mt1{margin-top:.5rem}.mt2{margin-top:1rem}.mt3{margin-top:1.5rem}
+.mb1{margin-bottom:.5rem}.mb2{margin-bottom:1rem}.mb3{margin-bottom:1.5rem}
+.tag-chip{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:20px;background:var(--paper);border:1px solid var(--rule2);color:var(--ink2);margin:2px}
+.tag-chip:hover{border-color:var(--archive);color:var(--archive);text-decoration:none}
+
+/* ---- Toast ---- */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper2);font-size:13px;font-weight:500;padding:.65rem 1.35rem;border-radius:var(--r);opacity:0;pointer-events:none;transition:all .25s;z-index:999;box-shadow:var(--shadow2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="shell">
+  {% block sidebar %}
+  <div class="sidebar">
+    <div class="s-brand">
+      <div class="s-mark">§</div>
+      <div><div class="s-name">Policy Ledger</div><div class="s-company">{{ config.COMPANY_NAME }}</div></div>
+    </div>
+    <nav class="s-nav">
+      {% if current_user.can_manage_policies() %}
+      <div class="s-section">Admin</div>
+      <a href="{{ url_for('admin.dashboard') }}" class="s-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Dashboard</a>
+      <a href="{{ url_for('admin.policy_list') }}" class="s-item {% if 'policy' in request.endpoint %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>Policies</a>
+      <a href="{{ url_for('admin.policy_create') }}" class="s-item"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>New Policy</a>
+      {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.user_list') }}" class="s-item {% if 'user' in request.endpoint %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Users</a>
+      <a href="{{ url_for('admin.category_list') }}" class="s-item"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.4 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>Categories</a>
+      <a href="{{ url_for('audit_center.audit_dashboard') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('audit_center.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V11"/><path d="M13 2v7h7"/><line x1="8" y1="14" x2="14" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/><path d="M13 2l8 8"/></svg></span>Audit Center</a>
+      <a href="{{ url_for('compliance.compliance_center') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('compliance.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.6 0 3.1.42 4.4 1.15"/><path d="M17 4l2 2-2 2"/></svg></span>Compliance Center</a>
+      <a href="{{ url_for('governance.dashboard') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('governance.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M12 8v5"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg></span>Governance Health</a>
+      <a href="{{ url_for('confusion_index.dashboard') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('confusion_index.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Confusion Index</a>
+      <a href="{{ url_for('contradiction_radar.dashboard') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('contradiction_radar.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.9 4.9l3 3M19.1 4.9l-3 3M4.9 19.1l3-3M19.1 19.1l-3-3"/><circle cx="12" cy="12" r="9"/></svg></span>Contradiction Radar</a>
+      <a href="{{ url_for('knowledge_graph.graph_page') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('knowledge_graph.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><circle cx="12" cy="12" r="2.5"/><line x1="8.2" y1="7.5" x2="10.2" y2="10.5"/><line x1="15.8" y1="7.5" x2="13.8" y2="10.5"/><line x1="8.2" y1="16.5" x2="10.2" y2="13.5"/><line x1="15.8" y1="16.5" x2="13.8" y2="13.5"/></svg></span>Knowledge Graph</a>
+      <a href="{{ url_for('what_if.review_queue') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('what_if.') and 'admin' in request.path %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>What-If Queue</a>
+      <a href="{{ url_for('rag.admin_rag_dashboard') }}" class="s-item {% if 'rag' in request.endpoint %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8.5" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14" r="1" fill="currentColor" stroke="none"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>AI Dashboard</a>
+      <a href="{{ url_for('search.search_analytics') }}" class="s-item {% if request.endpoint == 'search.search_analytics' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Search Analytics</a>
+      <a href="{{ url_for('bi.bi_dashboard') }}" class="s-item {% if request.endpoint == 'bi.bi_dashboard' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg></span>BI Dashboard</a>
+      <a href="{{ url_for('workflow.template_list') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('workflow.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><path d="M6 9v6M9 6h4a3 3 0 0 1 3 3v0M9 18h4a3 3 0 0 0 3-3v0"/></svg></span>Workflows</a>
+      {% endif %}
+      <div class="s-section">Employee</div>
+      {% endif %}
+      <a href="{{ url_for('employee.dashboard') }}" class="s-item {% if request.endpoint == 'employee.dashboard' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></span>My Dashboard</a>
+      <a href="{{ url_for('employee.onboarding') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('employee.onboarding') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Onboarding Path</a>
+      <a href="{{ url_for('meetings.list_meetings') }}" class="s-item {% if request.endpoint and 'meetings.' in request.endpoint and request.endpoint != 'meetings.my_action_items' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Meetings</a>
+      <a href="{{ url_for('meetings.my_action_items') }}" class="s-item {% if request.endpoint == 'meetings.my_action_items' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>My Action Items</a>
+      <a href="{{ url_for('rag.chat_page') }}" class="s-item {% if request.endpoint == 'rag.chat_page' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8.5" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14" r="1" fill="currentColor" stroke="none"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>AI Assistant</a>
+      <a href="{{ url_for('what_if.simulator') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('what_if.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span>What-If Simulator</a>
+      <a href="{{ url_for('employee.policy_browse') }}" class="s-item {% if request.endpoint == 'employee.policy_browse' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Browse Policies</a>
+      <a href="{{ url_for('employee.search') }}" class="s-item {% if request.endpoint == 'employee.search' %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>Search</a>
+      <a href="{{ url_for('search.advanced_search') }}" class="s-item {% if request.endpoint and request.endpoint.startswith('search.') %}active{% endif %}"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3-3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span>Advanced Search</a>
+      <a href="{{ url_for('employee.saved_list') }}" class="s-item"><span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>Saved</a>
+      <a href="{{ url_for('employee.notifications') }}" class="s-item">
+        <span class="s-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>Notifications
+        {% if unread_count is defined and unread_count > 0 %}<span class="s-badge">{{ unread_count }}</span>{% endif %}
+      </a>
+    </nav>
+    <div class="s-foot">
+      <div class="s-user-name">{{ current_user.name }}</div>
+      <div class="s-user-role">{{ current_user.role }}</div>
+      <div class="s-foot-links">
+        <a href="{{ url_for('auth.profile') }}">Profile</a>
+        <a href="{{ url_for('auth.logout') }}">Sign out</a>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <form action="{{ url_for('employee.search') }}" method="GET" style="flex:1;max-width:420px">
+          <div class="search-bar">
+            <span style="color:var(--faint)" class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input name="q" placeholder="Search policies…" value="{{ request.args.get('q','') }}">
+          </div>
+        </form>
+      </div>
+      <div class="topbar-right">
+        <a href="{{ url_for('employee.notifications') }}" class="notif-btn" title="Notifications">
+          <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+          {% set unc = unread_count if unread_count is defined else 0 %}
+          {% if unc > 0 %}<span class="notif-badge">{{ unc }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary btn-sm">{{ current_user.name[:18] }}</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-list">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function confirmAction(msg,form){if(confirm(msg)){form.submit()}return false}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

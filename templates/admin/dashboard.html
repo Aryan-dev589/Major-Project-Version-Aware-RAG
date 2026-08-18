@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Dashboard</h1><p>Overview of your policy knowledge base</p></div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('admin.policy_create') }}" class="btn btn-primary">+ New Policy</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">{{ total }}</div><div class="stat-label">Total policies</div></div>
+  <div class="stat-card"><div class="stat-val">{{ active }}</div><div class="stat-label">Active policies</div></div>
+  <div class="stat-card amber"><div class="stat-val">{{ draft }}</div><div class="stat-label">Drafts</div></div>
+  <div class="stat-card"><div class="stat-val">{{ in_review }}</div><div class="stat-label">In review</div></div>
+  <div class="stat-card"><div class="stat-val">{{ archived }}</div><div class="stat-label">Archived</div></div>
+  <div class="stat-card blue"><div class="stat-val">{{ total_users }}</div><div class="stat-label">Active users</div></div>
+</div>
+
+<div class="grid2 mb3">
+  <!-- Recent policies -->
+  <div class="card">
+    <div class="card-label">Recently updated</div>
+    {% if recent_policies %}
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      {% for p in recent_policies %}
+      <div style="display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid var(--rule)">
+        <div style="flex:1;min-width:0">
+          <a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}" style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">{{ p.title }}</a>
+          <span class="text-mono" style="color:var(--faint)">{{ p.policy_id }} · {{ p.updated_at.strftime('%d %b %Y') }}</span>
+        </div>
+        <span class="pill pill-{{ p.status }}">{{ p.status.replace('_',' ') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="empty"><div class="empty-title">No policies yet</div><div class="empty-sub"><a href="{{ url_for('admin.policy_create') }}">Create your first policy →</a></div></div>
+    {% endif %}
+  </div>
+
+  <!-- Category breakdown -->
+  <div>
+    {% if cat_data %}
+    <div class="card mb2">
+      <div class="card-label">Policies by category</div>
+      {% set max_count = cat_data[0].count if cat_data else 1 %}
+      {% for c in cat_data[:8] %}
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.55rem">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ c.color }};flex-shrink:0"></span>
+        <span style="font-size:13px;min-width:100px;color:var(--ink2)">{{ c.name }}</span>
+        <div style="flex:1;height:8px;background:var(--rule);border-radius:4px;overflow:hidden">
+          <div style="height:100%;background:{{ c.color }};width:{{ (c.count / max_count * 100)|int }}%;border-radius:4px;transition:width .5s ease"></div>
+        </div>
+        <span class="text-mono" style="color:var(--faint);min-width:20px;text-align:right">{{ c.count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if expiring %}
+    <div class="card">
+      <div class="card-label">Expiring within 30 days</div>
+      {% for p in expiring %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--rule);font-size:13px">
+        <a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}">{{ p.title }}</a>
+        <span style="color:var(--red);font-family:var(--font-mono);font-size:11px">{{ p.expiry_date }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if pending_approvals %}
+<div class="card mb3">
+  <div class="card-label">Pending your approval</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Policy</th><th>Stage</th><th>Since</th><th></th></tr></thead>
+      <tbody>
+        {% for a in pending_approvals %}
+        <tr>
+          <td class="td-title"><a href="{{ url_for('admin.policy_detail', policy_id=a.policy_id) }}">{{ a.policy.title }}</a></td>
+          <td><span class="pill pill-{{ a.stage }}">{{ a.stage.replace('_',' ') }}</span></td>
+          <td class="td-mono">{{ a.created_at.strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('admin.policy_detail', policy_id=a.policy_id) }}" class="btn btn-sm btn-primary">Review →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-label">Recent audit activity</div>
+  {% if recent_logs %}
+  <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.3rem">
+    {% for log in recent_logs %}
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:12.5px">
+      <span class="text-mono" style="color:var(--faint);min-width:130px">{{ log.timestamp.strftime('%d %b %H:%M') }}</span>
+      <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--archive)">{{ log.action }}</span>
+      <span style="color:var(--ink2)">{% if log.user %}{{ log.user.name }}{% else %}System{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="text-faint" style="font-size:13px;margin-top:.5rem">No activity yet.</div>{% endif %}
+</div>
+{% endblock %}

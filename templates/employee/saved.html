@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Saved Policies — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Saved Policies</h1><p>{{ saved|length }} bookmarked</p></div></div>
+{% if saved %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+  {% for p in saved %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.5rem">
+      <a href="{{ url_for('employee.policy_view', policy_id=p.id) }}" style="font-family:var(--font-serif);font-weight:700;font-size:14.5px">{{ p.title }}</a>
+      <button onclick="toggleSave({{ p.id }},this)" style="background:none;border:none;cursor:pointer;color:var(--ink2)" title="Remove bookmark"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+    </div>
+    <div class="gap-row">
+      {% if p.category %}<span class="tag-chip">{{ p.category.name }}</span>{% endif %}
+      <span class="text-mono" style="color:var(--faint)">v{{ p.current_version }}</span>
+      <span class="pill pill-{{ p.priority }}">{{ p.priority }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">No saved policies</div><div class="empty-sub">Click "+ Save" on any policy to bookmark it here for quick access</div></div>
+{% endif %}
+<script>
+async function toggleSave(id,btn){
+  const res=await fetch(`/policies/${id}/save`,{method:'POST'});
+  const d=await res.json();
+  if(!d.saved) btn.closest('.card').remove();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}AI RAG Dashboard — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>AI & RAG Dashboard</h1><p>Vector database health, indexing jobs, and search analytics</p></div>
+</div>
+
+<div class="stat-grid mb3" style="grid-template-columns:repeat(5,1fr)">
+  <div class="stat-card"><div class="stat-val">{{ indexed_policies }}</div><div class="stat-label">Indexed policies</div></div>
+  <div class="stat-card"><div class="stat-val">{{ chunk_count }}</div><div class="stat-label">Total chunks</div></div>
+  <div class="stat-card"><div class="stat-val">{{ total_queries }}</div><div class="stat-label">Total queries</div></div>
+  <div class="stat-card {% if failed_jobs > 0 %}red{% endif %}"><div class="stat-val">{{ failed_jobs }}</div><div class="stat-label">Failed index jobs</div></div>
+  <div class="stat-card {% if failed_queries > 0 %}amber{% endif %}"><div class="stat-val">{{ failed_queries }}</div><div class="stat-label">Unanswered queries</div></div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Vector database status</div>
+    <table style="font-size:13px;width:100%">
+      {% macro row(k,v) %}<tr><td style="padding:.35rem .4rem;color:var(--faint);width:140px">{{ k }}</td><td style="padding:.35rem .4rem;font-family:var(--font-mono);font-size:12px">{{ v }}</td></tr>{% endmacro %}
+      {{ row('Engine', 'ChromaDB (persistent)') }}
+      {{ row('Embedding model', embedder_model) }}
+      {{ row('Total vectors', vec_stats.get('total_chunks', '—')) }}
+      {{ row('Collection', vec_stats.get('collection', 'policy_chunks')) }}
+      {{ row('Storage path', vec_stats.get('path', '—')) }}
+      {{ row('LLM provider', llm_provider) }}
+      {{ row('Status', 'Healthy' if not vec_stats.get('error') else 'Error: ' + vec_stats.get('error', '')) }}
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Feedback summary</div>
+    {% set total_fb = thumbs_up + thumbs_down %}
+    {% set pct = ((thumbs_up / total_fb) * 100)|int if total_fb > 0 else 0 %}
+    <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem">
+      <div style="text-align:center"><div style="font-size:28px;font-family:var(--font-mono);font-weight:700;color:var(--archive)">{{ thumbs_up }}</div><div style="font-size:12px;color:var(--faint)">Helpful</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-family:var(--font-mono);font-weight:700;color:var(--red)">{{ thumbs_down }}</div><div style="font-size:12px;color:var(--faint)">Not helpful</div></div>
+      <div style="flex:1"><div style="font-size:12px;color:var(--faint);margin-bottom:.3rem">Satisfaction rate</div>
+        <div style="height:10px;background:var(--rule);border-radius:5px;overflow:hidden"><div style="height:100%;background:var(--archive);width:{{ pct }}%;border-radius:5px;transition:width .5s"></div></div>
+        <div style="font-size:13px;font-weight:600;margin-top:.3rem">{{ pct }}%</div>
+      </div>
+    </div>
+    <div class="card-label mt2">Top searched topics</div>
+    {% for q, count in top_queries %}
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem;font-size:13px">
+      <span style="flex:1;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q }}</span>
+      <span class="text-mono" style="color:var(--faint)">{{ count }}x</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No queries yet</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Re-index policies</div>
+  <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Click to re-index a policy version into the vector database. Do this after editing policy content.</p>
+  <div id="policyIndexList"></div>
+</div>
+
+<div class="card">
+  <div class="card-label">Recent indexing jobs</div>
+  {% if recent_jobs %}
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Time</th><th>Policy</th><th>Chunks</th><th>Status</th><th>Error</th></tr></thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        <tr>
+          <td class="td-mono">{{ job.completed_at.strftime('%d %b %H:%M') if job.completed_at else '—' }}</td>
+          <td>{% if job.policy_id %}Policy #{{ job.policy_id }}{% else %}—{% endif %}</td>
+          <td class="td-mono">{{ job.chunks_indexed }}</td>
+          <td><span class="pill {% if job.status == 'success' %}pill-active{% else %}pill-rejected{% endif %}">{{ job.status }}</span></td>
+          <td style="font-size:12px;color:var(--red)">{{ job.error_message[:60] if job.error_message else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<div class="text-faint" style="font-size:13px;margin-top:.5rem">No indexing jobs yet. Publish a policy to trigger indexing.</div>{% endif %}
+</div>
+
+<script>
+async function indexPolicy(policyId, versionId, btn) {
+  if (!versionId) {
+    btn.textContent = 'No active version';
+    btn.className = 'btn btn-sm btn-danger';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Indexing...';
+  try {
+    const res = await fetch(`/rag/admin/index/${policyId}/${versionId}`, {method:'POST'});
+    const d = await res.json();
+    if (d.success) {
+      btn.textContent = `Indexed (${d.chunks} chunks)`;
+      btn.className = 'btn btn-sm btn-secondary';
+      showToast(`Indexed ${d.chunks} chunks successfully`);
+    } else {
+      btn.textContent = `Failed: ${d.error}`;
+      btn.className = 'btn btn-sm btn-danger';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Error';
+    btn.className = 'btn btn-sm btn-danger';
+    btn.disabled = false;
+  }
+}
+
+// Load active policies for re-indexing
+const policyIndexEl = document.getElementById('policyIndexList');
+policyIndexEl.innerHTML = '<div class="text-faint" style="font-size:13px">Loading policies...</div>';
+fetch('/admin/api/documents').then(r=>r.json()).then(docs => {
+  if (!docs.length) { policyIndexEl.innerHTML = '<div class="text-faint" style="font-size:13px">No policies found</div>'; return; }
+  policyIndexEl.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Policy</th><th>Version</th><th>Status</th><th></th></tr></thead><tbody>
+  ${docs.map(d=>`<tr>
+    <td style="font-weight:600">${d.title}</td>
+    <td class="td-mono">${d.current_version || 'No active version'}</td>
+    <td><span class="pill pill-${d.status}">${d.status}</span></td>
+    <td><button class="btn btn-sm btn-primary" onclick="indexPolicy(${d.id}, ${d.version_id}, this)">Index</button></td>
+  </tr>`).join('')}
+  </tbody></table></div>`;
+}).catch(()=>{
+  policyIndexEl.innerHTML = '<div class="text-faint">Could not load policies</div>';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Workflow Templates — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Workflow Templates</h1><p>Configurable approval chains — conditional, parallel, with SLA timers</p></div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('workflow.workflow_analytics') }}" class="btn btn-secondary">📊 Analytics</a>
+    <a href="{{ url_for('workflow.template_create') }}" class="btn btn-primary">+ New Template</a>
+  </div>
+</div>
+
+{% if templates %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Applies to</th><th>Stages</th><th>Default</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for t in templates %}
+      <tr>
+        <td class="td-title">{{ t.name }}</td>
+        <td class="td-mono" style="font-size:12px">
+          {{ t.category.name if t.category else 'Any category' }}
+          {% if t.applies_priorities %} · {{ t.applies_priorities|join(', ') }}{% endif %}
+        </td>
+        <td class="td-mono">
+          {{ t.stages|length }} stage{% if t.stages|length != 1 %}s{% endif %}
+          <div class="text-faint" style="font-size:11px">{{ t.stages|map(attribute='name')|join(' → ') }}</div>
+        </td>
+        <td>
+          {% if t.is_default %}<span class="pill pill-active">Default</span>
+          {% else %}<form method="POST" action="{{ url_for('workflow.template_set_default', template_id=t.id) }}"><button class="btn btn-sm btn-ghost" type="submit">Make default</button></form>{% endif %}
+        </td>
+        <td><span class="pill {{ 'pill-active' if t.is_active else 'pill-archived' }}">{{ 'Active' if t.is_active else 'Inactive' }}</span></td>
+        <td>
+          <div class="gap-row">
+            <a href="{{ url_for('workflow.template_edit', template_id=t.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+            <form method="POST" action="{{ url_for('workflow.template_delete', template_id=t.id) }}" onsubmit="return confirm('Delete this template? Policies mid-workflow on it will keep their current stage instances.')">
+              <button class="btn btn-sm btn-ghost" type="submit">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <div class="empty-title">No workflow templates yet</div>
+  <div class="empty-sub">
+    Policies currently use the built-in HR → Legal → Management chain.
+    <a href="{{ url_for('workflow.template_create') }}">Create a template</a> to customize stages, add parallel approvers, and set SLA timers.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

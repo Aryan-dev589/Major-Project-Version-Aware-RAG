@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Meetings — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Meetings</h1><p>{{ meetings.total }} total — agendas, minutes, decisions & action items</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('meetings.create_meeting') }}" class="btn btn-primary">+ Schedule Meeting</a></div>
+</div>
+
+<div class="card mb2">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <div class="field" style="margin:0">
+      <select name="when">
+        <option value="">All time</option>
+        <option value="upcoming" {% if when == 'upcoming' %}selected{% endif %}>Upcoming</option>
+        <option value="past" {% if when == 'past' %}selected{% endif %}>Past</option>
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <select name="status">
+        <option value="">All statuses</option>
+        {% for s in all_statuses %}<option value="{{ s }}" {% if s == status_filter %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <select name="type">
+        <option value="">All types</option>
+        {% for t in all_types %}<option value="{{ t }}" {% if t == type_filter %}selected{% endif %}>{{ t.replace('_',' ').title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+    <a href="{{ url_for('meetings.list_meetings') }}" class="btn btn-ghost">Clear</a>
+  </form>
+</div>
+
+{% if meetings.items %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Code</th><th>Title</th><th>Type</th><th>When</th><th>Organizer</th><th>Status</th><th>Attendees</th><th>Open items</th><th></th></tr></thead>
+    <tbody>
+      {% for m in meetings.items %}
+      <tr>
+        <td class="td-mono">{{ m.meeting_code }}</td>
+        <td><a href="{{ url_for('meetings.meeting_detail', meeting_id=m.id) }}" class="td-title" style="display:block">{{ m.title }}</a></td>
+        <td class="td-mono">{{ m.meeting_type.replace('_',' ') }}</td>
+        <td class="td-mono">{{ m.scheduled_at.strftime('%d %b %Y, %H:%M') }}</td>
+        <td>{{ m.organizer.name }}</td>
+        <td><span class="pill pill-{{ 'active' if m.status=='completed' else ('archived' if m.status=='cancelled' else 'draft') }}">{{ m.status }}</span></td>
+        <td class="td-mono">{{ m.attendee_count }}</td>
+        <td class="td-mono">{{ m.open_action_count }}</td>
+        <td><a href="{{ url_for('meetings.meeting_detail', meeting_id=m.id) }}" class="btn btn-sm btn-secondary">Open</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if meetings.pages > 1 %}
+<div class="pagination">
+  {% for page in meetings.iter_pages() %}
+    {% if page %}<a href="{{ url_for('meetings.list_meetings', page=page, status=status_filter, type=type_filter, when=when) }}" class="page-btn {% if page == meetings.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty"><div class="empty-title">No meetings found</div><div class="empty-sub"><a href="{{ url_for('meetings.create_meeting') }}">Schedule your first meeting →</a></div></div>
+{% endif %}
+{% endblock %}

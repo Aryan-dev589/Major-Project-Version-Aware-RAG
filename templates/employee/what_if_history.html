@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}What-If History — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>My What-If History</h1></div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('what_if.simulator') }}" class="btn btn-primary">+ New scenario</a>
+  </div>
+</div>
+
+{% set verdict_meta = {
+  'compliant':     {'label': 'Compliant',      'bg': 'var(--green2)',  'fg': 'var(--green)'},
+  'not_compliant': {'label': 'Not Compliant',  'bg': 'var(--red2)',    'fg': 'var(--red)'},
+  'depends':       {'label': 'Depends',        'bg': 'var(--amber2)',  'fg': 'var(--amber)'},
+  'unclear':       {'label': 'Unclear',        'bg': 'var(--blue2)',   'fg': 'var(--blue)'},
+} %}
+
+{% if queries %}
+<div style="display:flex;flex-direction:column;gap:.75rem">
+  {% for q in queries %}
+  {% set vm = verdict_meta.get(q.verdict, verdict_meta['unclear']) %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+      <div>
+        <div style="font-size:14px;font-weight:600">"{{ q.scenario_text }}"</div>
+        <div style="font-size:12px;color:var(--faint);margin-top:.35rem">{{ q.created_at.strftime('%b %d, %Y %H:%M') }}</div>
+      </div>
+      <span style="background:{{ vm.bg }};color:{{ vm.fg }};font-weight:700;font-size:12px;padding:.3rem .7rem;border-radius:20px;flex-shrink:0">{{ vm.label }}</span>
+    </div>
+    {% if q.explanation %}<div style="font-size:13px;color:var(--ink2);margin-top:.6rem">{{ q.explanation }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">No scenarios checked yet</div><div class="empty-sub"><a href="{{ url_for('what_if.simulator') }}">Try the What-If Simulator</a></div></div>
+{% endif %}
+{% endblock %}

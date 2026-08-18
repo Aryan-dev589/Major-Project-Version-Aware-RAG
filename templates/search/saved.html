@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Saved Searches — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Saved Searches</h1><p>Re-run any saved filter set in one click</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('search.advanced_search') }}" class="btn btn-primary">+ New Search</a></div>
+</div>
+
+{% if searches %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th>Uses</th><th></th></tr></thead>
+    <tbody>
+      {% for s in searches %}
+      <tr>
+        <td class="td-title">{{ s.name }}</td>
+        <td class="td-mono">{{ s.scope }}</td>
+        <td class="td-mono">{{ s.created_at.strftime('%d %b %Y') }}</td>
+        <td class="td-mono">{{ s.last_used_at.strftime('%d %b %Y') if s.last_used_at else 'Never' }}</td>
+        <td class="td-mono">{{ s.use_count or 0 }}</td>
+        <td>
+          <div class="gap-row">
+            <a href="{{ url_for('search.run_saved_search', search_id=s.id) }}" class="btn btn-sm btn-secondary">Run</a>
+            <form method="POST" action="{{ url_for('search.delete_saved_search', search_id=s.id) }}" onsubmit="return confirm('Delete this saved search?')">
+              <button class="btn btn-sm btn-ghost" type="submit">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty"><div class="empty-title">No saved searches yet</div><div class="empty-sub"><a href="{{ url_for('search.advanced_search') }}">Run a search</a> and save it for quick access later.</div></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Policy Ledger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f4f0e6;--paper2:#faf8f2;--ink:#1a1f1c;--ink2:#4a504a;--faint:#8a8f88;--rule:#d6d0be;--rule2:#c2bba8;--archive:#2a4a38;--archive2:#e0ebe4;--archive3:#1e3628;--red:#8c3020;--red2:#f0e0dc}
+html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;position:relative}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:repeating-linear-gradient(transparent,transparent 39px,var(--rule) 39px,var(--rule) 40px);opacity:.3}
+.wrap{max-width:420px;width:100%;position:relative;z-index:1}
+.card{background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:2.5rem;box-shadow:0 2px 4px rgba(26,31,28,.04),0 16px 48px rgba(26,31,28,.10)}
+.brand{text-align:center;margin-bottom:2rem}
+.brand-mark{font-family:'Source Serif 4',serif;font-size:28px;font-weight:700;color:var(--archive);width:52px;height:52px;border-radius:50%;border:2px solid var(--archive);display:inline-flex;align-items:center;justify-content:center;margin-bottom:.75rem}
+.brand-name{font-family:'Source Serif 4',serif;font-size:22px;font-weight:700;display:block;margin-bottom:.25rem}
+.brand-sub{font-size:13px;color:var(--faint)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:.35rem}
+.field input{width:100%;padding:.6rem .8rem;border:1px solid var(--rule2);border-radius:4px;font-size:14px;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);transition:border-color .15s}
+.field input:focus{outline:none;border-color:var(--archive);background:var(--paper2)}
+.btn{width:100%;padding:.7rem;background:var(--archive);color:#fff;border:none;border-radius:4px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:opacity .15s;margin-top:.5rem}
+.btn:hover{opacity:.88}
+.error{background:var(--red2);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:.65rem .85rem;font-size:13px;margin-bottom:1rem}
+.links{display:flex;justify-content:space-between;margin-top:1.25rem;font-size:12.5px}
+.links a{color:var(--archive)}
+.divider{display:flex;align-items:center;gap:.75rem;margin:1.25rem 0;color:var(--faint);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--rule)}
+.register-link{text-align:center;margin-top:1rem;font-size:13px;color:var(--ink2)}
+.register-link a{color:var(--archive);font-weight:600}
+.remember{display:flex;align-items:center;gap:.5rem;font-size:13px;color:var(--ink2);margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="brand">
+      <div class="brand-mark">§</div>
+      <span class="brand-name">Policy Ledger</span>
+      <span class="brand-sub">Sign in to your account</span>
+    </div>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <div class="field"><label for="email">Email address</label><input type="email" id="email" name="email" placeholder="you@company.com" required autofocus></div>
+      <div class="field"><label for="password">Password</label><input type="password" id="password" name="password" placeholder="••••••••" required></div>
+      <label class="remember"><input type="checkbox" name="remember"> Remember me for 30 days</label>
+      <button type="submit" class="btn">Sign in →</button>
+    </form>
+    <div class="links">
+      <a href="{{ url_for('auth.register') }}">Create account</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ user.name }} — Activity Replay{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>{{ user.name }}</h1><p>{{ user.email }} · {{ user.role }} · Activity replay</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('audit_center.audit_dashboard') }}" class="btn btn-ghost">← Dashboard</a></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Most common actions</div>
+  <div class="gap-row" style="flex-wrap:wrap">
+    {% for action, count in top_actions %}
+    <span class="tag-chip">{{ action }} × {{ count }}</span>
+    {% else %}<span class="text-faint" style="font-size:13px">No activity yet.</span>{% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Chronological activity ({{ logs.total }} events)</div>
+  <div style="margin-top:.5rem">
+    {% for l in logs.items %}
+    <div style="display:flex;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--rule);font-size:12.5px">
+      <span class="td-mono" style="color:var(--faint);width:150px;flex-shrink:0">{{ l.timestamp.strftime('%d %b %Y, %H:%M:%S') }}</span>
+      <span class="td-mono" style="flex:1">{{ l.action }}{% if l.resource_type %} · {{ l.resource_type }}{% if l.resource_id %}#{{ l.resource_id }}{% endif %}{% endif %}</span>
+      <span style="color:var(--faint)">{{ l.ip_address or '' }}</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No activity recorded for this user.</div>{% endfor %}
+  </div>
+</div>
+
+{% if logs.pages > 1 %}
+<div class="pagination">
+  {% for page in logs.iter_pages() %}
+    {% if page %}<a href="{{ url_for('audit_center.user_activity', user_id=user.id, page=page) }}" class="page-btn {% if page == logs.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

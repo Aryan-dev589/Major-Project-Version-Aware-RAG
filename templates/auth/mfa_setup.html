@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Enable MFA — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Enable Two-Factor Authentication</h1></div></div>
+<div class="grid2" style="max-width:700px">
+  <div class="card">
+    <div class="card-label">Step 1 — Scan QR code</div>
+    <p style="font-size:13.5px;color:var(--ink2);margin-bottom:1rem">Open Google Authenticator, Authy, or any TOTP app and scan this QR code:</p>
+    <img src="data:image/png;base64,{{ qr_b64 }}" alt="MFA QR Code" style="width:180px;height:180px;border:4px solid var(--paper2);border-radius:4px">
+    <div class="mt2"><div class="card-label">Or enter manually</div><div style="font-family:var(--font-mono);font-size:13px;background:var(--paper);padding:.65rem;border-radius:4px;word-break:break-all">{{ secret }}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Step 2 — Verify code</div>
+    <p style="font-size:13.5px;color:var(--ink2);margin-bottom:1rem">Enter the 6-digit code shown in your authenticator app to confirm setup:</p>
+    <form method="POST">
+      <div class="field"><label>Verification code</label><input type="text" name="code" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="off" autofocus style="font-family:var(--font-mono);font-size:22px;letter-spacing:.2em;text-align:center"></div>
+      <button type="submit" class="btn btn-primary">Verify & Enable MFA</button>
+    </form>
+    <div class="mt2"><a href="{{ url_for('auth.profile') }}" class="btn btn-ghost">Cancel</a></div>
+  </div>
+</div>
+{% endblock %}

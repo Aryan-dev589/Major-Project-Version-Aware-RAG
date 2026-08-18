@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Add User — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Add User</h1></div>
+  <div class="page-header-actions"><a href="{{ url_for('admin.user_list') }}" class="btn btn-ghost">Cancel</a></div>
+</div>
+{% if error %}<div class="alert alert-danger mb2">{{ error }}</div>{% endif %}
+<div class="card" style="max-width:560px">
+  <form method="POST">
+    <div class="field"><label>Full name *</label><input name="name" required autofocus></div>
+    <div class="field"><label>Work email *</label><input type="email" name="email" required></div>
+    <div class="field"><label>Employee ID</label><input name="employee_id" placeholder="EMP-001"></div>
+    <div class="field"><label>Designation</label><input name="designation" placeholder="Software Engineer"></div>
+    <div class="form-grid">
+      <div class="field"><label>Role *</label>
+        <select name="role">{% for r in roles %}<option value="{{ r }}">{{ r.title() }}</option>{% endfor %}</select>
+      </div>
+      <div class="field"><label>Department</label>
+        <select name="department_id"><option value="">— Select —</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="field"><label>Password *</label><input type="password" name="password" placeholder="Min. 8 characters" required></div>
+    <button type="submit" class="btn btn-primary">Create user</button>
+  </form>
+</div>
+{% endblock %}

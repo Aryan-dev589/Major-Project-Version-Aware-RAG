@@ -1,0 +1,71 @@
+
+	<html>
+	  <head>
+		<meta charset="utf-8" />
+		<title>Remote Work Governance and Allowance Standard</title>
+		<style>
+		  body { font-family: Arial, sans-serif; margin: 32px; color: #1e1e1e; line-height: 1.6; }
+		  h1, h2 { color: #112c4f; }
+		  .meta { border: 1px solid #cfd8e3; background: #f6f9fc; padding: 12px 16px; margin-bottom: 18px; }
+		  .meta div { margin: 4px 0; }
+		  table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 11px; }
+		  th, td { border: 1px solid #b9c5d4; padding: 8px; text-align: left; vertical-align: top; }
+		  th { background: #dfeaf7; }
+		  tr:nth-child(even) { background: #f7fafc; }
+		  .section { margin-top: 28px; }
+		</style>
+	  </head>
+	  <body>
+		<h1>Remote Work Governance and Allowance Standard</h1>
+		<div class="meta">
+		  <div><strong>Document ID:</strong> POL-REMOTE-GOV-2026-01</div>
+		  <div><strong>Effective Date:</strong> 2026-07-01</div>
+		  <div><strong>Compliance Frameworks:</strong> ISO/IEC 27001, SOC 2 Type II, GDPR</div>
+		  <div><strong>Operational Domain:</strong> Workforce Mobility and Endpoint Security</div>
+		</div>
+
+		<div class="section">
+		  <h2>1. Purpose and Scope</h2>
+		  <p>This standard establishes a deterministic operating framework for regulated enterprise controls, ensuring that administrative, technical, and operational obligations are aligned to internal risk tolerance, external legal obligations, and service commitments. The control model applies to all human, automated, and third-party actors with access to confidential systems, multi-tenant data estates, and identity-bound workloads.</p>
+		  <p>Scope includes production and non-production systems that handle customer data, cryptographic material, privileged endpoints, SaaS integrations, and delegated approval pathways. The organization shall maintain a zero-trust posture, enforce asymmetric key generation for sensitive workloads, and maintain heuristic anomaly detection overlays for all data-plane ingress and egress events.</p>
+		</div>
+
+		<div class="section">
+		  <h2>2. Standard Operating Procedures</h2>
+		  <p>All operational units shall maintain a documented control register reviewed quarterly by the control owner, the internal audit function, and legal compliance. The company shall ensure data separation within multi-tenant storage systems, secure key rotation windows, and account-level privilege minimization constrained by least-privilege design. Every privileged action must be attributable, logged, and retained according to statutory and contractual obligations. High-risk anomalies, policy violations, or manual overrides shall trigger a documented incident ticket and require independent review within 24 hours.</p>
+		  <p>For all in-scope business units, escalation and remediation times shall be SLA-bound. Where a data subject request, incident declaration, or regulator inquiry is received, the DPO and privacy operations team must acknowledge receipt, triage operational severity, and communicate material developments within the legally required notification window. The organization shall maintain time-bound evidence logs to support both regulatory review and customer assurance obligations.</p>
+		</div>
+
+		<div class="section">
+		  <h2>3. Governance and Access Control Matrices</h2>
+		  <table>
+			<thead>
+			  <tr>
+				<th>Role Designation</th>
+				<th>Subnet Access</th>
+				<th>Data Level Authorization</th>
+				<th>MFA Requirement</th>
+				<th>Session Timeout</th>
+				<th>Approval Condition</th>
+			  </tr>
+			</thead>
+			<tbody>
+			  
+		<tr><td>Senior Security Engineer</td><td>10.28.0.0/16</td><td>Tier 3 Confidential</td><td>Required</td><td>240 minutes</td><td>Hybrid, privileged approval</td></tr>
+		<tr><td>Regional HR Partner</td><td>10.32.0.0/20</td><td>Tier 1 Internal</td><td>Required</td><td>480 minutes</td><td>Department manager attestation</td></tr>
+		<tr><td>Finance Controller</td><td>10.40.0.0/24</td><td>Tier 3 Restricted</td><td>Required + Hardware key</td><td>120 minutes</td><td>Dual approval and quarterly review</td></tr>
+		<tr><td>Procurement Analyst</td><td>10.44.0.0/24</td><td>Tier 2 Confidential</td><td>Required</td><td>300 minutes</td><td>Annual compliance attestation</td></tr>
+		<tr><td>Support Engineer</td><td>10.50.0.0/23</td><td>Tier 1 Internal</td><td>Required</td><td>360 minutes</td><td>Role-specific just-in-time access</td></tr>
+	
+			</tbody>
+		  </table>
+		</div>
+
+		<div class="section">
+		  <h2>4. Audit, Violation, and Enforcement Protocols</h2>
+		  <p>Violations of this standard may include unauthorized data export, policy exception bypass, failure to document key lifecycle events, or negligent configuration drift. Where a violation is identified, the control owner must classify severity, isolate affected systems, and notify the legal compliance committee within applicable deadlines. Repeat violations may result in temporary access suspension, mandatory retraining, intensified audit frequency, and escalation to formal disciplinary action.</p>
+		  <p>All enforcement actions shall be rooted in objective evidence and time-stamped records. Internal audits may sample controls across network segmentation, cryptographic governance, infrastructure telemetry, HR access workflows, and third-party due diligence. The organization shall retain evidence bundles sufficient to demonstrate policy compliance to regulators, customers, and contractual counterparties.</p>
+		</div>
+	  </body>
+	</html>
+	

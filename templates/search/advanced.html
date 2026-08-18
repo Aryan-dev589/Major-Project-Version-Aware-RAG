@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Advanced Search — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Advanced Search</h1><p>Filter across policies and meetings by field, date, tag, and more</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('search.saved_searches') }}" class="btn btn-secondary">★ Saved Searches</a></div>
+</div>
+
+<form method="GET" class="card mb3">
+  <div class="seg mb2">
+    <button type="submit" name="scope" value="policies" class="seg-btn {% if scope == 'policies' %}active{% endif %}">Policies</button>
+    <button type="submit" name="scope" value="meetings" class="seg-btn {% if scope == 'meetings' %}active{% endif %}">Meetings</button>
+    <button type="submit" name="scope" value="all" class="seg-btn {% if scope == 'all' %}active{% endif %}">Both</button>
+  </div>
+
+  <div class="field">
+    <label>Keyword</label>
+    <input name="q" value="{{ f.q }}" placeholder="Search title, description, agenda…">
+  </div>
+
+  {% if scope in ('policies', 'all') %}
+  <div class="divider"></div>
+  <div class="card-label">Policy filters</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Category</label>
+      <select name="category_id">
+        <option value="">Any</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if f.category_id == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Department</label>
+      <select name="department_id">
+        <option value="">Any</option>
+        {% for d in departments %}<option value="{{ d.id }}" {% if f.department_id == d.id|string %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Author</label>
+      <select name="author_id">
+        <option value="">Any</option>
+        {% for u in authors %}<option value="{{ u.id }}" {% if f.author_id == u.id|string %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Tag</label>
+      <select name="tag">
+        <option value="">Any</option>
+        {% for t in tags %}<option value="{{ t.name }}" {% if f.tag == t.name %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Priority</label>
+      <select name="priority">
+        <option value="">Any</option>
+        {% for p in ['low','medium','high','critical'] %}<option value="{{ p }}" {% if f.priority == p %}selected{% endif %}>{{ p.title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select name="status">
+        <option value="">Any</option>
+        {% for s in all_statuses %}<option value="{{ s }}" {% if f.status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Confidentiality</label>
+      <select name="confidentiality">
+        <option value="">Any</option>
+        {% for c in ['public','internal','confidential','restricted'] %}<option value="{{ c }}" {% if f.confidentiality == c %}selected{% endif %}>{{ c.title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Version label</label>
+      <input name="version_label" value="{{ f.version_label }}" placeholder="e.g. v2.0">
+    </div>
+  </div>
+  <div class="gap-row">
+    <label style="display:flex;align-items:center;gap:.4rem;font-size:13px"><input type="checkbox" name="mandatory" value="1" {% if f.mandatory == '1' %}checked{% endif %}> Mandatory only</label>
+    <label style="display:flex;align-items:center;gap:.4rem;font-size:13px"><input type="checkbox" name="search_content" value="1" {% if f.search_content == '1' %}checked{% endif %}> Search inside policy content</label>
+  </div>
+  {% endif %}
+
+  {% if scope in ('meetings', 'all') %}
+  <div class="divider"></div>
+  <div class="card-label">Meeting filters</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Meeting type</label>
+      <select name="meeting_type">
+        <option value="">Any</option>
+        {% for t in all_meeting_types %}<option value="{{ t }}" {% if f.meeting_type == t %}selected{% endif %}>{{ t.replace('_',' ').title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Meeting status</label>
+      <select name="meeting_status">
+        <option value="">Any</option>
+        {% for s in all_meeting_statuses %}<option value="{{ s }}" {% if f.meeting_status == s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Organizer</label>
+      <select name="organizer_id">
+        <option value="">Any</option>
+        {% for u in authors %}<option value="{{ u.id }}" {% if f.organizer_id == u.id|string %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="divider"></div>
+  <div class="form-grid">
+    <div class="field"><label>Date from</label><input type="date" name="date_from" value="{{ f.date_from }}"></div>
+    <div class="field"><label>Date to</label><input type="date" name="date_to" value="{{ f.date_to }}"></div>
+  </div>
+
+  <div class="gap-row mt2">
+    <button type="submit" name="scope" value="{{ scope }}" class="btn btn-primary">Search</button>
+    <a href="{{ url_for('search.advanced_search') }}" class="btn btn-ghost">Clear filters</a>
+  </div>
+</form>
+
+{% if has_query %}
+<form method="POST" action="{{ url_for('search.save_search') }}" class="card mb3">
+  <input type="hidden" name="scope" value="{{ scope }}">
+  {% for k, v in f.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  <div class="gap-row">
+    <input name="name" placeholder="Name this search to save it…" style="flex:1;padding:.5rem .7rem;border:1px solid var(--rule2);border-radius:var(--r);font-size:13px">
+    <button type="submit" class="btn btn-sm btn-secondary">💾 Save Search</button>
+  </div>
+</form>
+
+{% if scope in ('policies', 'all') %}
+<div class="card-label mb2">Policies — {{ policy_results|length }} result{% if policy_results|length != 1 %}s{% endif %}</div>
+{% if policy_results %}
+<div class="table-wrap mb3">
+  <table>
+    <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Author</th><th>Status</th><th>Priority</th><th>Updated</th><th></th></tr></thead>
+    <tbody>
+      {% for p in policy_results %}
+      <tr>
+        <td class="td-mono">{{ p.policy_id }}</td>
+        <td class="td-title">{{ p.title }}</td>
+        <td class="td-mono">{{ p.category.name if p.category else '—' }}</td>
+        <td>{{ p.author.name if p.author else '—' }}</td>
+        <td><span class="pill pill-{{ p.status }}">{{ p.status.replace('_',' ') }}</span></td>
+        <td><span class="pill pill-{{ p.priority }}">{{ p.priority }}</span></td>
+        <td class="td-mono">{{ p.updated_at.strftime('%d %b %Y') }}</td>
+        <td><a href="{{ url_for('employee.policy_view', policy_id=p.id) }}" class="btn btn-sm btn-secondary">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}<div class="text-faint mb3" style="font-size:13px">No matching policies.</div>{% endif %}
+{% endif %}
+
+{% if scope in ('meetings', 'all') %}
+<div class="card-label mb2">Meetings — {{ meeting_results|length }} result{% if meeting_results|length != 1 %}s{% endif %}</div>
+{% if meeting_results %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Organizer</th><th>When</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for m in meeting_results %}
+      <tr>
+        <td class="td-mono">{{ m.meeting_code }}</td>
+        <td class="td-title">{{ m.title }}</td>
+        <td class="td-mono">{{ m.meeting_type.replace('_',' ') }}</td>
+        <td>{{ m.organizer.name }}</td>
+        <td class="td-mono">{{ m.scheduled_at.strftime('%d %b %Y, %H:%M') }}</td>
+        <td><span class="pill pill-{{ 'active' if m.status=='completed' else ('archived' if m.status=='cancelled' else 'draft') }}">{{ m.status }}</span></td>
+        <td><a href="{{ url_for('meetings.meeting_detail', meeting_id=m.id) }}" class="btn btn-sm btn-secondary">Open</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}<div class="text-faint" style="font-size:13px">No matching meetings.</div>{% endif %}
+{% endif %}
+{% else %}
+<div class="empty"><div class="empty-title">Set filters above and search</div><div class="empty-sub">Or check your <a href="{{ url_for('search.saved_searches') }}">saved searches</a></div></div>
+{% endif %}
+{% endblock %}

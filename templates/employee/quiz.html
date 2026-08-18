@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Quiz: {{ policy.title }} — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Quiz: {{ policy.title }}</h1><p>Answer all questions to test your understanding — 70% needed to pass</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('employee.policy_view', policy_id=policy.id) }}" class="btn btn-ghost">← Back to policy</a></div>
+</div>
+
+<form method="POST" action="{{ url_for('employee.submit_quiz', policy_id=policy.id) }}">
+  {% for q in quiz %}
+  {% set outer_idx = loop.index0 %}
+  <div class="card mb2">
+    <div style="font-weight:600;font-size:14px;margin-bottom:.7rem">{{ loop.index }}. {{ q.question }}</div>
+    {% for opt in q.options %}
+    <label style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;font-size:13.5px;cursor:pointer">
+      <input type="radio" name="q{{ outer_idx }}" value="{{ loop.index0 }}" required>
+      {{ opt }}
+    </label>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <button type="submit" class="btn btn-primary">Submit Quiz</button>
+</form>
+{% endblock %}

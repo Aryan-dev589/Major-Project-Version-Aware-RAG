@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Policy Confusion Index — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Policy Confusion Index</h1>
+    <p>Combines quiz mistakes, uncertain What-If verdicts, downvoted chat answers, comment volume, and zero-result searches into one score per policy — real rewrite priorities, not guesses.</p>
+  </div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ policy_count }}</div><div class="stat-label">Active policies scanned</div></div>
+  <div class="stat-card"><div class="stat-val">{{ rows|length }}</div><div class="stat-label">With a logged confusion signal</div></div>
+  <div class="stat-card"><div class="stat-val">{{ signal_totals.quiz_attempts }}</div><div class="stat-label">Quiz attempts</div></div>
+  <div class="stat-card"><div class="stat-val">{{ signal_totals.whatif_queries }}</div><div class="stat-label">What-If queries logged</div></div>
+</div>
+
+<div class="card">
+  <div class="card-label">Ranked by confusion score</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Score</th>
+          <th>Quiz wrong-rate</th>
+          <th>What-If (uncertain / mentions)</th>
+          <th>Chat downvotes</th>
+          <th>Comments</th>
+          <th>Zero-result searches</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="td-title">
+            <a href="{{ url_for('admin.policy_detail', policy_id=row.policy.id) }}">{{ row.policy.title }}</a>
+            <div class="text-mono" style="color:var(--faint);font-size:11px">{{ row.policy.policy_id }}</div>
+          </td>
+          <td>
+            <span style="font-weight:700;font-size:15px;color:{% if row.score >= 60 %}var(--red){% elif row.score >= 35 %}var(--amber){% else %}var(--green){% endif %}">{{ row.score }}</span>
+            <span style="color:var(--faint)">/100</span>
+          </td>
+          <td>{% if row.quiz_attempts %}{{ row.quiz_wrong_rate }}% <span style="color:var(--faint)">({{ row.quiz_attempts }} attempt{{ 's' if row.quiz_attempts != 1 }})</span>{% else %}<span style="color:var(--faint)">no attempts</span>{% endif %}</td>
+          <td>{% if row.whatif_mentions %}{{ row.whatif_uncertain }} / {{ row.whatif_mentions }}{% if row.whatif_flagged %} <span class="pill pill-mandatory">{{ row.whatif_flagged }} HR-flagged</span>{% endif %}{% else %}<span style="color:var(--faint)">—</span>{% endif %}</td>
+          <td>{{ row.downvotes or '—' }}</td>
+          <td>{{ row.comments or '—' }}</td>
+          <td>{{ row.zero_result_searches or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="color:var(--faint);text-align:center;padding:1.5rem">No confusion signals logged yet — as employees take quizzes, run What-If scenarios, comment, or vote on chat answers, this list will fill in.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

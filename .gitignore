@@ -1,0 +1,12 @@
+# Ignore the active environment containing your HF/RAG models
+.venv/
+
+# Ignore the inactive environment folder visible in the sidebar
+venv/
+
+# Ignore your private environment variables and API keys
+.env
+
+# Ignore Python's internal compilation cache files
+__pycache__/
+*.pyc

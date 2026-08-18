@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}New Version — {{ policy.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>New Version — {{ policy.title }}</h1>
+    <p>Current version: <strong>{{ policy.current_version }}</strong> · Create a minor (1.0→1.1) or major (1.0→2.0) version bump</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('admin.policy_detail', policy_id=policy.id) }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</div>
+{% if error %}<div class="alert alert-danger mb2">{{ error }}</div>{% endif %}
+<form method="POST">
+  <div class="grid2 mb2">
+    <div class="card">
+      <div class="card-label">Version settings</div>
+      <div class="field">
+        <label>Version bump type</label>
+        <div class="seg">
+          <button type="button" class="seg-btn active" id="btn-minor" onclick="setBump('minor')">Minor ({{ policy.current_version }} → next minor)</button>
+          <button type="button" class="seg-btn" id="btn-major" onclick="setBump('major')">Major (→ next major)</button>
+        </div>
+        <input type="hidden" name="bump_type" id="bump_type" value="minor">
+      </div>
+      <div class="field"><label>What changed? (required)</label><input name="summary" placeholder="e.g. Remote days increased from 2 to 3. Equipment clause updated." required></div>
+      <div class="field"><label>Reason for change</label><input name="change_reason" placeholder="e.g. Annual policy review, employee feedback"></div>
+      <div class="field"><label>New effective date</label><input type="date" name="effective_date"></div>
+    </div>
+    {% if current_ver %}
+    <div class="card">
+      <div class="card-label">Previous version content ({{ current_ver.version_label }}) — for reference</div>
+      <div style="font-family:var(--font-mono);font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:260px;overflow-y:auto;color:var(--ink2)">{{ current_ver.content }}</div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card mb2">
+    <div class="card-label">New version content *</div>
+    <div class="field" style="margin:0">
+      <textarea name="content" rows="20" placeholder="Write the full updated policy text here…" required>{{ current_ver.content if current_ver else '' }}</textarea>
+    </div>
+  </div>
+  <div class="gap-row">
+    <button type="submit" class="btn btn-primary">Create version</button>
+    <a href="{{ url_for('admin.policy_detail', policy_id=policy.id) }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+<script>
+function setBump(type){
+  document.getElementById('bump_type').value=type;
+  document.getElementById('btn-minor').classList.toggle('active', type==='minor');
+  document.getElementById('btn-major').classList.toggle('active', type==='major');
+}
+</script>
+{% endblock %}

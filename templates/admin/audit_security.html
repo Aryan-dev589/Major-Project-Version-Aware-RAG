@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Security Report — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Security Report</h1><p>Login activity, suspicious behavior, and MFA adoption — last 30 days</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('audit_center.audit_dashboard') }}" class="btn btn-ghost">← Dashboard</a></div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ successful_logins_30d }}</div><div class="stat-label">Successful logins</div></div>
+  <div class="stat-card {% if failed_login_count > 0 %}amber{% endif %}"><div class="stat-val">{{ failed_login_count }}</div><div class="stat-label">Failed login attempts</div></div>
+  <div class="stat-card"><div class="stat-val">{{ mfa_adoption }}%</div><div class="stat-label">MFA adoption ({{ mfa_users }}/{{ total_users }})</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">Suspicious login attempts — by email (5+ failures)</div>
+    {% if suspicious_emails %}
+    {% for s in suspicious_emails %}
+    <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:13px">
+      <span class="td-mono">{{ s.email }}</span><span class="pill pill-critical">{{ s.count }} attempts</span>
+    </div>
+    {% endfor %}
+    {% else %}<div class="text-faint" style="font-size:13px">No suspicious activity detected.</div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-label">Suspicious login attempts — by IP (5+ failures)</div>
+    {% if suspicious_ips %}
+    {% for s in suspicious_ips %}
+    <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:13px">
+      <span class="td-mono">{{ s.ip }}</span><span class="pill pill-critical">{{ s.count }} attempts</span>
+    </div>
+    {% endfor %}
+    {% else %}<div class="text-faint" style="font-size:13px">No suspicious activity detected.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

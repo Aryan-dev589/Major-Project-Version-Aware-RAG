@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Create Account — Policy Ledger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f4f0e6;--paper2:#faf8f2;--ink:#1a1f1c;--ink2:#4a504a;--faint:#8a8f88;--rule:#d6d0be;--rule2:#c2bba8;--archive:#2a4a38;--archive2:#e0ebe4;--red:#8c3020;--red2:#f0e0dc}
+html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.card{background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:2.5rem;max-width:440px;width:100%;box-shadow:0 2px 4px rgba(26,31,28,.06),0 16px 48px rgba(26,31,28,.10)}
+.brand{text-align:center;margin-bottom:1.75rem}
+.brand-mark{font-family:'Source Serif 4',serif;font-size:26px;font-weight:700;color:var(--archive);width:48px;height:48px;border-radius:50%;border:2px solid var(--archive);display:inline-flex;align-items:center;justify-content:center;margin-bottom:.65rem}
+.brand-name{font-family:'Source Serif 4',serif;font-size:20px;font-weight:700;display:block;margin-bottom:.2rem}
+.brand-sub{font-size:13px;color:var(--faint)}
+.field{margin-bottom:.9rem}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:.3rem}
+.field input{width:100%;padding:.58rem .8rem;border:1px solid var(--rule2);border-radius:4px;font-size:14px;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--archive)}
+.btn{width:100%;padding:.68rem;background:var(--archive);color:#fff;border:none;border-radius:4px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-top:.5rem}
+.btn:hover{opacity:.88}
+.error{background:var(--red2);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:.65rem .85rem;font-size:13px;margin-bottom:1rem}
+.link-row{text-align:center;margin-top:1rem;font-size:13px;color:var(--ink2)}
+.link-row a{color:var(--archive);font-weight:600}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-mark">§</div>
+    <span class="brand-name">Create Account</span>
+    <span class="brand-sub">Policy Ledger</span>
+  </div>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <div class="field"><label>Full name</label><input name="name" placeholder="Priya Sharma" required autofocus></div>
+    <div class="field"><label>Work email</label><input type="email" name="email" placeholder="you@company.com" required></div>
+    <div class="field"><label>Password</label><input type="password" name="password" placeholder="Min. 8 characters" required></div>
+    <div class="field"><label>Confirm password</label><input type="password" name="confirm_password" placeholder="Repeat password" required></div>
+    <button type="submit" class="btn">Create account →</button>
+  </form>
+  <div class="link-row">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></div>
+</div>
+</body>
+</html>

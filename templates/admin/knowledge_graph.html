@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Policy Knowledge Graph — Policy Ledger{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+  #kg-canvas{width:100%;height:70vh;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper2)}
+  .kg-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:.6rem}
+  .kg-legend span{display:inline-flex;align-items:center;gap:.35rem}
+  .kg-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  #kg-detail{font-size:12.5px;color:var(--ink2)}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Policy Knowledge Graph</h1>
+    <p>A real, clickable graph built from actual database relationships — Department → Policy → Version → Approval, and Meeting → Decision → Policy — so you can trace why a policy exists back through the meetings and decisions behind it.</p>
+  </div>
+</div>
+
+<div class="card mb2">
+  <div id="kg-canvas"></div>
+  <div class="kg-legend">
+    <span><span class="kg-dot" style="background:#2a4a38"></span>Department</span>
+    <span><span class="kg-dot" style="background:#1d5c8a"></span>Policy</span>
+    <span><span class="kg-dot" style="background:#6b7280"></span>Version</span>
+    <span><span class="kg-dot" style="background:#8a6d1d"></span>Approval</span>
+    <span><span class="kg-dot" style="background:#7a2a8a"></span>Meeting</span>
+    <span><span class="kg-dot" style="background:#b1442e"></span>Decision</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Selected node</div>
+  <div id="kg-detail" style="margin-top:.5rem">Click any node to see details here. Click a policy node to open it.</div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('kg-canvas');
+  const detail = document.getElementById('kg-detail');
+
+  fetch("{{ url_for('knowledge_graph.graph_data') }}")
+    .then(r => r.json())
+    .then(data => {
+      if (!data.nodes.length) {
+        canvas.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--faint)">No graph data yet — create some policies, meetings, and decisions first.</div>';
+        return;
+      }
+      const nodes = new vis.DataSet(data.nodes.map(n => ({
+        id: n.id, label: n.label, group: n.group,
+        color: { background: n.color, border: n.color },
+        font: { color: '#fff', size: 12 },
+        shape: n.group === 'policy' ? 'box' : 'dot',
+        size: n.group === 'policy' ? 18 : 10,
+        _raw: n,
+      })));
+      const edges = new vis.DataSet(data.edges.map((e, i) => ({
+        id: i, from: e.from, to: e.to, label: e.label || '',
+        arrows: 'to', font: { size: 9, color: '#8a8f88', strokeWidth: 0 },
+        color: { color: '#c2bba8', highlight: '#2a4a38' },
+      })));
+
+      const network = new vis.Network(canvas, { nodes, edges }, {
+        physics: { stabilization: true, barnesHut: { gravitationalConstant: -4000, springLength: 120 } },
+        interaction: { hover: true },
+        layout: { improvedLayout: true },
+      });
+
+      network.on('click', function(params) {
+        if (!params.nodes.length) { return; }
+        const node = nodes.get(params.nodes[0]);
+        const raw = node._raw || {};
+        let html = '<strong>' + node.label + '</strong> <span style="color:var(--faint)">(' + node.group + ')</span>';
+        if (raw.status) { html += '<br>Status: ' + raw.status; }
+        if (raw.meeting_code) { html += '<br>' + raw.meeting_code; }
+        if (raw.url) { html += '<br><a href="' + raw.url + '">Open policy →</a>'; }
+        detail.innerHTML = html;
+      });
+    })
+    .catch(() => {
+      canvas.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--faint)">Could not load graph data.</div>';
+    });
+})();
+</script>
+{% endblock %}

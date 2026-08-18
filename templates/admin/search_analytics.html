@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Search Analytics — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Search Analytics</h1><p>What people search for, and where results come up empty</p></div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ total_searches }}</div><div class="stat-label">Total searches</div></div>
+  <div class="stat-card {% if zero_result > 0 %}amber{% endif %}"><div class="stat-val">{{ zero_result }}</div><div class="stat-label">Zero-result searches</div></div>
+  <div class="stat-card"><div class="stat-val">{{ success_rate }}%</div><div class="stat-label">Success rate</div></div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Top searches</div>
+    {% for q, count in top_queries %}
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem;font-size:13px">
+      <span style="flex:1;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q }}</span>
+      <span class="text-mono" style="color:var(--faint)">{{ count }}x</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No searches yet</div>{% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-label">Zero-result searches (knowledge gaps)</div>
+    {% for q, count in zero_result_queries %}
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem;font-size:13px">
+      <span style="flex:1;color:var(--red)">{{ q }}</span>
+      <span class="text-mono" style="color:var(--faint)">{{ count }}x</span>
+    </div>
+    {% else %}<div class="text-faint" style="font-size:13px">No zero-result searches — good coverage.</div>{% endfor %}
+  </div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Most-used saved searches</div>
+  {% if most_saved %}
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Name</th><th>Owner</th><th>Scope</th><th>Uses</th></tr></thead>
+      <tbody>
+        {% for s in most_saved %}
+        <tr><td class="td-title">{{ s.name }}</td><td>{{ s.user.name }}</td><td class="td-mono">{{ s.scope }}</td><td class="td-mono">{{ s.use_count or 0 }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<div class="text-faint" style="font-size:13px;margin-top:.5rem">No saved searches yet</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="card-label">Recent searches</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Time</th><th>Query</th><th>Results</th></tr></thead>
+      <tbody>
+        {% for s in recent %}
+        <tr>
+          <td class="td-mono">{{ s.created_at.strftime('%d %b %H:%M') }}</td>
+          <td>{{ s.query_text }}</td>
+          <td><span class="pill {% if s.answered %}pill-active{% else %}pill-rejected{% endif %}">{{ s.chunks_found }}</span></td>
+        </tr>
+        {% else %}<tr><td colspan="3" class="text-faint">No searches yet</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

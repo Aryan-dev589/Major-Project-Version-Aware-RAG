@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Categories — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Policy Categories</h1></div></div>
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">Add category</div>
+    <form method="POST">
+      <div class="field"><label>Category name *</label><input name="name" placeholder="e.g. AI Usage" required></div>
+      <div class="field"><label>Color</label><input type="color" name="color" value="#2a4a38" style="height:40px;padding:.2rem"></div>
+      <button type="submit" class="btn btn-primary">Add category</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>Name</th><th>Policies</th></tr></thead>
+      <tbody>
+        {% for c in categories %}
+        <tr>
+          <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ c.color or '#2a4a38' }}"></span></td>
+          <td style="font-weight:600">{{ c.name }}</td>
+          <td class="td-mono">{{ c.policies.count() }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-faint" style="text-align:center;padding:1.5rem">No categories yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

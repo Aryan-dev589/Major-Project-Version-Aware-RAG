@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Browse Policies — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Browse Policies</h1><p>{{ policies.total }} active policies</p></div></div>
+<div class="card mb2">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <div class="field" style="margin:0;flex:1;min-width:200px"><input name="q" placeholder="Search…" value="{{ search }}"></div>
+    <div class="field" style="margin:0">
+      <select name="category"><option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if c.id==cat_filter %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <select name="department"><option value="">All departments</option>
+        {% for d in departments %}<option value="{{ d.id }}" {% if d.id==dept_filter %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    <a href="{{ url_for('employee.policy_browse') }}" class="btn btn-ghost">Clear</a>
+  </form>
+  {% if popular_tags %}
+  <div style="margin-top:.85rem;display:flex;flex-wrap:wrap;gap:.4rem">
+    {% for t in popular_tags %}<a href="{{ url_for('employee.policy_browse', tag=t.name) }}" class="tag-chip {% if t.name==tag_filter %}active{% endif %}">{{ t.name }}</a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% if policies.items %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem">
+  {% for p in policies.items %}
+  <a href="{{ url_for('employee.policy_view', policy_id=p.id) }}" class="card" style="text-decoration:none;display:flex;flex-direction:column;gap:.5rem;transition:box-shadow .15s" onmouseover="this.style.boxShadow='var(--shadow2)'" onmouseout="this.style.boxShadow='var(--shadow)'">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+      <span style="font-family:var(--font-serif);font-weight:700;font-size:15px;color:var(--ink)">{{ p.title }}</span>
+      {% if p.category %}<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ p.category.color or '#2a4a38' }};flex-shrink:0;margin-top:6px"></span>{% endif %}
+    </div>
+    {% if p.description %}<div style="font-size:12.5px;color:var(--ink2);line-height:1.45">{{ p.description[:100] }}{% if p.description|length > 100 %}…{% endif %}</div>{% endif %}
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto">
+      <span class="pill pill-{{ p.priority }}">{{ p.priority }}</span>
+      <span class="text-mono" style="color:var(--faint)">v{{ p.current_version }}</span>
+      {% if p.is_mandatory %}<span class="pill pill-mandatory">Mandatory</span>{% endif %}
+      <span class="text-mono" style="color:var(--faint);margin-left:auto">{{ p.view_count }} views</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% if policies.pages > 1 %}
+<div class="pagination mt2">
+  {% for page in policies.iter_pages() %}
+    {% if page %}<a href="{{ url_for('employee.policy_browse', page=page, q=search, category=cat_filter, department=dept_filter, tag=tag_filter) }}" class="page-btn {% if page==policies.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% else %}<div class="empty"><div class="empty-title">No policies found</div><div class="empty-sub">Try a different search or filter</div></div>{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Workflow Analytics — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Workflow Analytics</h1><p>Bottlenecks, SLA health, and throughput across all approval workflows</p></div>
+  <div class="page-header-actions">
+    <form method="POST" action="{{ url_for('workflow.check_reminders') }}">
+      <button class="btn btn-secondary" type="submit">↻ Check Reminders & Escalations Now</button>
+    </form>
+    <a href="{{ url_for('workflow.template_list') }}" class="btn btn-primary">Templates</a>
+  </div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ pending_count }}</div><div class="stat-label">Pending stages</div></div>
+  <div class="stat-card {% if overdue_count > 0 %}amber{% endif %}"><div class="stat-val">{{ overdue_count }}</div><div class="stat-label">Overdue (past SLA)</div></div>
+  <div class="stat-card {% if escalated_count > 0 %}amber{% endif %}"><div class="stat-val">{{ escalated_count }}</div><div class="stat-label">Escalated</div></div>
+  <div class="stat-card"><div class="stat-val">{{ approved_count }}</div><div class="stat-label">Stages approved</div></div>
+  <div class="stat-card"><div class="stat-val">{{ rejected_count }}</div><div class="stat-label">Stages rejected</div></div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Bottlenecks — average time per stage (completed stages only)</div>
+  {% if bottlenecks %}
+  {% for b in bottlenecks %}
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;font-size:13px">
+    <span style="flex:1">{{ b.name }}</span>
+    <span class="text-mono" style="color:var(--faint)">{{ b.count }} run{% if b.count != 1 %}s{% endif %}</span>
+    <span class="pill {% if b.avg_hours > 48 %}pill-critical{% elif b.avg_hours > 24 %}pill-high{% else %}pill-low{% endif %}">{{ b.avg_hours }}h avg</span>
+  </div>
+  {% endfor %}
+  {% else %}<div class="text-faint" style="font-size:13px">No completed stages yet.</div>{% endif %}
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Currently pending stages</div>
+  {% if pending_stages %}
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Policy</th><th>Stage</th><th>Mode</th><th>SLA due</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in pending_stages %}
+        <tr>
+          <td><a href="{{ url_for('admin.policy_detail', policy_id=s.policy_id) }}">{{ s.policy.title }}</a></td>
+          <td>{{ s.name }}</td>
+          <td class="td-mono">{{ s.approval_mode }}</td>
+          <td class="td-mono">{{ s.sla_due_at.strftime('%d %b %H:%M') if s.sla_due_at else '—' }}</td>
+          <td>
+            {% if s.escalated %}<span class="pill pill-critical">Escalated</span>
+            {% elif s.is_overdue %}<span class="pill pill-high">Overdue</span>
+            {% else %}<span class="pill pill-draft">On track</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<div class="text-faint" style="font-size:13px;margin-top:.5rem">Nothing pending right now.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="card-label">Templates in use</div>
+  {% for t in templates %}
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem;font-size:13px">
+    <span style="flex:1">{{ t.name }}{% if t.is_default %} <span class="pill pill-active" style="font-size:9px">Default</span>{% endif %}</span>
+    <span class="text-mono" style="color:var(--faint)">{{ t.stages|length }} stage(s)</span>
+  </div>
+  {% else %}<div class="text-faint" style="font-size:13px">No templates configured — policies use the built-in HR → Legal → Management chain.</div>{% endfor %}
+</div>
+{% endblock %}

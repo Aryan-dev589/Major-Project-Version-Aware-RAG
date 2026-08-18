@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>My Profile</h1><p>Manage your account and security settings</p></div>
+</div>
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">Profile information</div>
+    <form method="POST">
+      <input type="hidden" name="action" value="update_profile">
+      <div class="field"><label>Full name</label><input name="name" value="{{ current_user.name }}" required></div>
+      <div class="field"><label>Email</label><input value="{{ current_user.email }}" disabled style="opacity:.6"></div>
+      <div class="field"><label>Phone</label><input name="phone" value="{{ current_user.phone or '' }}" placeholder="+91 98765 43210"></div>
+      <div class="field"><label>Designation</label><input name="designation" value="{{ current_user.designation or '' }}" placeholder="Software Engineer"></div>
+      <div class="field"><label>Role</label><input value="{{ current_user.role }}" disabled style="opacity:.6;text-transform:capitalize"></div>
+      <button type="submit" class="btn btn-primary">Save changes</button>
+    </form>
+  </div>
+  <div>
+    <div class="card mb2">
+      <div class="card-label">Change password</div>
+      <form method="POST">
+        <input type="hidden" name="action" value="change_password">
+        <div class="field"><label>Current password</label><input type="password" name="old_password" required></div>
+        <div class="field"><label>New password</label><input type="password" name="new_password" required></div>
+        <div class="field"><label>Confirm new password</label><input type="password" name="confirm_password" required></div>
+        <button type="submit" class="btn btn-secondary">Update password</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-label">Two-factor authentication</div>
+      {% if current_user.mfa_enabled %}
+      <div class="alert alert-success mb2">MFA is currently enabled on your account.</div>
+      <form method="POST" action="{{ url_for('auth.mfa_disable') }}">
+        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Disable MFA? Your account will be less secure.')">Disable MFA</button>
+      </form>
+      {% else %}
+      <div class="alert alert-warning mb2">MFA is not enabled. Enable it for extra security.</div>
+      <a href="{{ url_for('auth.mfa_setup') }}" class="btn btn-primary btn-sm">Enable MFA →</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

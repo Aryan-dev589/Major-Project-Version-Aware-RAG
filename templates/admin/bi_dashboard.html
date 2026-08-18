@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}BI Dashboard — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Executive Dashboard</h1><p>Policy Ledger at a glance — growth, compliance, AI usage, and bottlenecks</p></div>
+</div>
+
+<div class="card mb3" style="border-left:3px solid var(--archive)">
+  <div class="card-label">✦ Insight</div>
+  <div style="font-size:14px;font-family:var(--font-serif)">{{ insight }}</div>
+</div>
+
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ compliance_rate }}%</div><div class="stat-label">Employee compliance</div></div>
+  <div class="stat-card"><div class="stat-val">{{ read_rate }}%</div><div class="stat-label">Read rate</div></div>
+  <div class="stat-card"><div class="stat-val">{{ total_ai_calls }}</div><div class="stat-label">AI actions (30d)</div></div>
+  <div class="stat-card"><div class="stat-val">{{ pending_review_count }}</div><div class="stat-label">Pending reviews</div></div>
+  <div class="stat-card {% if overdue_stages > 0 %}amber{% endif %}"><div class="stat-val">{{ overdue_stages }}</div><div class="stat-label">Overdue approvals</div></div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Policy Growth (12 months)</div>
+    <canvas id="policyGrowthChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-label">Version Growth (12 months)</div>
+    <canvas id="versionGrowthChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Search Trends (14 days) — {{ zero_result }} zero-result</div>
+    <canvas id="searchTrendChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-label">Meeting Trends (6 months)</div>
+    <canvas id="meetingTrendChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">AI Usage (30 days)</div>
+    {% if ai_usage %}<canvas id="aiUsageChart" height="200"></canvas>
+    {% else %}<div class="text-faint" style="font-size:13px">No AI actions logged yet.</div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-label">Approval Bottlenecks — avg hours per stage</div>
+    {% if bottlenecks %}<canvas id="bottlenecksChart" height="200"></canvas>
+    {% else %}<div class="text-faint" style="font-size:13px">No completed approval stages yet.</div>{% endif %}
+  </div>
+</div>
+
+<div class="card mb3">
+  <div class="card-label">Risk Heatmap — Category × Priority (active policies)</div>
+  {% if heatmap %}
+  <table style="margin-top:.5rem;font-size:12.5px">
+    <thead><tr><th style="text-align:left">Category</th>{% for p in priorities %}<th>{{ p.title() }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for row in heatmap %}
+      <tr>
+        <td style="font-weight:600">{{ row.category }}</td>
+        {% for cell in row.cells %}
+        {% set intensity = (cell / (row.cells|max) if row.cells|max else 0) %}
+        <td style="text-align:center;background:rgba(178,58,72,{{ (0.08 + intensity * 0.45)|round(2) }})">{{ cell if cell else '' }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="text-faint" style="font-size:13px">No active policies with priority data yet.</div>{% endif %}
+</div>
+
+<div class="grid2 mb3">
+  <div class="card">
+    <div class="card-label">Department Analytics</div>
+    <div class="table-wrap" style="margin-top:.5rem">
+      <table>
+        <thead><tr><th>Department</th><th>Policies</th><th>Employees</th><th>Compliance</th></tr></thead>
+        <tbody>
+          {% for d in dept_data %}
+          <tr>
+            <td>{{ d.name }}</td>
+            <td class="td-mono">{{ d.policies }}</td>
+            <td class="td-mono">{{ d.employees }}</td>
+            <td>{% if d.compliance is not none %}<span class="pill {% if d.compliance >= 80 %}pill-active{% elif d.compliance >= 50 %}pill-draft{% else %}pill-critical{% endif %}">{{ d.compliance }}%</span>{% else %}<span class="text-faint">—</span>{% endif %}</td>
+          </tr>
+          {% else %}<tr><td colspan="4" class="text-faint">No departments yet</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Most Active Employees (30 days)</div>
+    <div class="table-wrap" style="margin-top:.5rem">
+      <table>
+        <thead><tr><th>Employee</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for a in most_active %}<tr><td>{{ a.name }}</td><td class="td-mono">{{ a.count }}</td></tr>
+          {% else %}<tr><td colspan="2" class="text-faint">No activity logged yet</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Most Viewed Policies</div>
+  <div class="table-wrap" style="margin-top:.5rem">
+    <table>
+      <thead><tr><th>Title</th><th>Views</th><th>Category</th></tr></thead>
+      <tbody>
+        {% for p in most_viewed %}
+        <tr><td><a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}">{{ p.title }}</a></td><td class="td-mono">{{ p.view_count }}</td><td class="td-mono">{{ p.category.name if p.category else '—' }}</td></tr>
+        {% else %}<tr><td colspan="3" class="text-faint">No views recorded yet</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const inkColor = getComputedStyle(document.documentElement).getPropertyValue('--ink2').trim() || '#555';
+const archiveColor = getComputedStyle(document.documentElement).getPropertyValue('--archive').trim() || '#2f5233';
+const amberColor = getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() || '#b8860b';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = inkColor;
+
+function lineChart(id, labels, data, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new Chart(el, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function barChart(id, labels, data, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new Chart(el, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: color }] },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+lineChart('policyGrowthChart', {{ policy_growth|map(attribute='label')|list|tojson }}, {{ policy_growth|map(attribute='value')|list|tojson }}, archiveColor);
+lineChart('versionGrowthChart', {{ version_growth|map(attribute='label')|list|tojson }}, {{ version_growth|map(attribute='value')|list|tojson }}, archiveColor);
+lineChart('searchTrendChart', {{ search_trend|map(attribute='label')|list|tojson }}, {{ search_trend|map(attribute='value')|list|tojson }}, amberColor);
+lineChart('meetingTrendChart', {{ meeting_trend|map(attribute='label')|list|tojson }}, {{ meeting_trend|map(attribute='value')|list|tojson }}, amberColor);
+{% if ai_usage %}barChart('aiUsageChart', {{ ai_usage|map(attribute='action')|list|tojson }}, {{ ai_usage|map(attribute='count')|list|tojson }}, archiveColor);{% endif %}
+{% if bottlenecks %}barChart('bottlenecksChart', {{ bottlenecks|map(attribute='name')|list|tojson }}, {{ bottlenecks|map(attribute='avg_hours')|list|tojson }}, amberColor);{% endif %}
+</script>
+{% endblock %}

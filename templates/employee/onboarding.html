@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Onboarding Checklist — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Your Onboarding Reading Path</h1>
+    <p>A sequenced checklist instead of a document dump — mandatory policies first, ordered by Code of Conduct / IT Security, then your department, then the rest.</p>
+  </div>
+</div>
+
+{% if items %}
+<div class="stat-grid mb3">
+  <div class="stat-card"><div class="stat-val">{{ done_count }} / {{ items|length }}</div><div class="stat-label">Completed</div></div>
+  <div class="stat-card"><div class="stat-val">~{{ total_minutes }} min</div><div class="stat-label">Total estimated reading time</div></div>
+</div>
+
+<div class="card">
+  <div class="card-label">Reading order</div>
+  <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.75rem">
+    {% for item in items %}
+    <div style="display:flex;align-items:center;gap:1rem;padding:.75rem 0;border-bottom:1px solid var(--rule)">
+      <div class="text-mono" style="width:24px;color:var(--faint);flex-shrink:0">{{ item.order }}</div>
+      <div style="flex:1">
+        <a href="{{ url_for('employee.policy_view', policy_id=item.policy_id) }}" style="font-weight:600;{% if item.is_done %}text-decoration:line-through;color:var(--faint){% endif %}">{{ item.policy.title }}</a>
+        {% if item.policy.is_mandatory %}<span class="pill pill-mandatory" style="margin-left:.4rem">Mandatory</span>{% endif %}
+      </div>
+      {% if item.is_done %}
+      <span class="pill pill-active">✓ Done</span>
+      {% else %}
+      <form method="POST" action="{{ url_for('employee.onboarding_complete', policy_id=item.policy_id) }}">
+        <button type="submit" class="btn btn-sm btn-secondary">Mark read</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2rem;color:var(--faint)">
+  No onboarding checklist yet — this is generated automatically when your account is created, from the mandatory policies active at that time.
+</div>
+{% endif %}
+{% endblock %}

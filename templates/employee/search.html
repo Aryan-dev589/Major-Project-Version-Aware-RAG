@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Search — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-header-left"><h1>Search</h1></div></div>
+<div class="card mb2">
+  <form method="GET">
+    <div style="display:flex;gap:.75rem">
+      <input name="q" value="{{ query }}" placeholder="e.g. how many remote work days am I allowed?" style="flex:1;padding:.65rem .85rem;border:1px solid var(--rule2);border-radius:4px;font-size:15px;font-family:var(--font-sans);background:var(--paper)" autofocus>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+  </form>
+</div>
+
+{% if query %}
+
+  {# ---------------- AI Understanding panel ---------------- #}
+  {% if ai_result %}
+  <div class="card mb2" style="border-left:3px solid var(--archive)">
+    <div class="card-label" style="letter-spacing:.04em">AI UNDERSTANDING</div>
+    <div style="font-size:13px;color:var(--ink2);margin-top:.35rem">
+      Here's what I understood you're asking:
+      <span style="font-style:italic">"{{ query }}"</span>
+    </div>
+
+    <div style="margin-top:.85rem;font-size:15px;line-height:1.6;color:var(--ink)">
+      {{ ai_result.answer }}
+    </div>
+
+    {% if ai_result.citations %}
+    <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--rule2)">
+      <div class="card-label" style="margin-bottom:.5rem">SOURCES CITED</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        {% for c in ai_result.citations %}
+        <div style="display:flex;align-items:center;gap:.5rem;font-size:12.5px;color:var(--ink2)">
+          <span class="text-mono" style="color:var(--faint)">[{{ loop.index }}]</span>
+          {% if c.policy_id %}
+            <a href="{{ url_for('employee.policy_view', policy_id=c.policy_id) }}" style="font-weight:600">{{ c.policy_name }}</a>
+          {% else %}
+            <span style="font-weight:600">{{ c.policy_name }}</span>
+          {% endif %}
+          <span class="text-mono" style="color:var(--faint)">v{{ c.version }}</span>
+          <span>· Section: {{ c.section }}</span>
+          {% if c.page and c.page != "N/A" and c.page != "None" %}<span>· Page {{ c.page }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:.75rem;font-size:11.5px;color:var(--faint)">
+      Generated from your organization's active policies — always verify against the full document below before relying on it for a decision.
+    </div>
+  </div>
+  {% endif %}
+
+  {# ---------------- Full document results ---------------- #}
+  <div class="card-label mb2">{{ results|length }} document{% if results|length != 1 %}s{% endif %} matching "{{ query }}"</div>
+  {% if results %}
+  <div style="display:flex;flex-direction:column;gap:.75rem">
+    {% for p in results %}
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+        <div>
+          <a href="{{ url_for('employee.policy_view', policy_id=p.id) }}" style="font-family:var(--font-serif);font-weight:700;font-size:16px">{{ p.title }}</a>
+          <div class="gap-row mt1">
+            <span class="text-mono" style="color:var(--faint)">{{ p.policy_id }}</span>
+            {% if p.category %}<span class="tag-chip">{{ p.category.name }}</span>{% endif %}
+            <span class="pill pill-{{ p.priority }}">{{ p.priority }}</span>
+            <span class="text-mono" style="color:var(--faint)">v{{ p.current_version }}</span>
+          </div>
+          {% if p.description %}<div style="font-size:13px;color:var(--ink2);margin-top:.5rem">{{ p.description[:150] }}{% if p.description|length > 150 %}…{% endif %}</div>{% endif %}
+        </div>
+        <div style="display:flex;gap:.5rem;flex-shrink:0">
+          <a href="{{ url_for('employee.policy_download_pdf', policy_id=p.id) }}" class="btn btn-sm btn-secondary" title="Download the full policy as a PDF">⬇ PDF</a>
+          <a href="{{ url_for('employee.policy_view', policy_id=p.id) }}" class="btn btn-sm btn-secondary">View →</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><div class="empty-title">No results found</div><div class="empty-sub">Try different keywords or <a href="{{ url_for('employee.policy_browse') }}">browse all policies</a></div></div>
+  {% endif %}
+{% endif %}
+{% endblock %}

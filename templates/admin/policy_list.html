@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Policies — Policy Ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left"><h1>Policies</h1><p>{{ policies.total }} total</p></div>
+  <div class="page-header-actions"><a href="{{ url_for('admin.policy_create') }}" class="btn btn-primary">+ New Policy</a></div>
+</div>
+
+<div class="card mb2">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <div class="field" style="margin:0;flex:1;min-width:180px"><input name="q" placeholder="Search policies…" value="{{ search }}"></div>
+    <div class="field" style="margin:0">
+      <select name="status">
+        <option value="">All statuses</option>
+        {% for s in all_statuses %}<option value="{{ s }}" {% if s == status_filter %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <select name="category">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if c.id == cat_filter %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <select name="department">
+        <option value="">All departments</option>
+        {% for d in departments %}<option value="{{ d.id }}" {% if d.id == dept_filter %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+    <a href="{{ url_for('admin.policy_list') }}" class="btn btn-ghost">Clear</a>
+  </form>
+</div>
+
+{% if policies.items %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Version</th><th>Updated</th><th>Priority</th><th></th></tr></thead>
+    <tbody>
+      {% for p in policies.items %}
+      <tr>
+        <td class="td-mono">{{ p.policy_id }}</td>
+        <td><a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}" class="td-title" style="display:block">{{ p.title }}</a>{% if p.is_mandatory %} <span class="pill pill-mandatory">Mandatory</span>{% endif %}</td>
+        <td class="td-mono">{% if p.category %}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ p.category.color or '#2a4a38' }};margin-right:5px"></span>{{ p.category.name }}{% else %}—{% endif %}</td>
+        <td><span class="pill pill-{{ p.status }}">{{ p.status.replace('_',' ') }}</span></td>
+        <td class="td-mono">{{ p.current_version }}</td>
+        <td class="td-mono">{{ p.updated_at.strftime('%d %b %Y') }}</td>
+        <td><span class="pill pill-{{ p.priority }}">{{ p.priority }}</span></td>
+        <td>
+          <div class="gap-row">
+            <a href="{{ url_for('admin.policy_detail', policy_id=p.id) }}" class="btn btn-sm btn-secondary">View</a>
+            <a href="{{ url_for('admin.policy_edit', policy_id=p.id) }}" class="btn btn-sm btn-ghost">Edit</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if policies.pages > 1 %}
+<div class="pagination">
+  {% for page in policies.iter_pages() %}
+    {% if page %}<a href="{{ url_for('admin.policy_list', page=page, q=search, status=status_filter, category=cat_filter, department=dept_filter) }}" class="page-btn {% if page == policies.page %}current{% endif %}">{{ page }}</a>
+    {% else %}<span class="text-faint">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty"><div class="empty-title">No policies found</div><div class="empty-sub"><a href="{{ url_for('admin.policy_create') }}">Create your first policy →</a></div></div>
+{% endif %}
+{% endblock %}
