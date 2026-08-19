@@ -1,0 +1,390 @@
+{
+  "dataset_id": "policy-ledger-synthetic-2026",
+  "document_id": "POL-ACCESS-001",
+  "title": "Privileged Access Management Policy",
+  "policy_family": "identity_and_privileged_access",
+  "document_type": "corporate_policy",
+  "version": "2.0",
+  "status": "approved",
+  "effective_date": "2026-07-01",
+  "review_date": "2027-07-01",
+  "owner": {
+    "role": "Chief Information Security Officer",
+    "department": "Information Security"
+  },
+  "approvers": [
+    "Chief Information Security Officer",
+    "Chief Risk Officer",
+    "Data Protection Officer"
+  ],
+  "jurisdictions": [
+    "Global",
+    "European Union",
+    "India"
+  ],
+  "frameworks": [
+    "ISO/IEC 27001",
+    "SOC 2 Type II",
+    "NIST Cybersecurity Framework",
+    "GDPR"
+  ],
+  "scope": {
+    "applies_to": [
+      "Employees",
+      "Contractors",
+      "Managed service providers",
+      "Service accounts",
+      "Cloud workloads",
+      "Production infrastructure",
+      "Critical SaaS administration consoles"
+    ],
+    "systems": [
+      "Production databases",
+      "Identity providers",
+      "Cloud control planes",
+      "Security monitoring platforms",
+      "Financial reporting systems"
+    ]
+  },
+  "definitions": [
+    {
+      "term": "Privileged account",
+      "meaning": "An account capable of changing security controls, accessing restricted data, administering production systems, or modifying identity and authorization settings."
+    },
+    {
+      "term": "Break-glass access",
+      "meaning": "Time-limited emergency access used when the normal privileged access workflow would materially delay containment or restoration of a critical service."
+    },
+    {
+      "term": "Access owner",
+      "meaning": "The accountable manager responsible for confirming that a role still requires the requested privilege."
+    },
+    {
+      "term": "Phishing-resistant MFA",
+      "meaning": "Multi-factor authentication based on a hardware security key or equivalent WebAuthn/FIDO2 mechanism that is resistant to credential replay and phishing proxy attacks."
+    }
+  ],
+  "control_objectives": [
+    "Prevent unauthorized privileged access.",
+    "Ensure every privileged action is attributable to an identified human or service identity.",
+    "Limit privilege duration and scope according to least-privilege principles.",
+    "Preserve evidence sufficient for internal audit, regulatory review, and incident investigation.",
+    "Provide a controlled emergency path without allowing permanent bypass of standard controls."
+  ],
+  "rules": [
+    {
+      "id": "ACCESS-001",
+      "topic": "phishing_resistant_mfa",
+      "statement": "All human privileged accounts must use phishing-resistant MFA before accessing production or restricted administrative interfaces.",
+      "applies_to": [
+        "System Administrators",
+        "Database Administrators",
+        "Cloud Platform Engineers",
+        "Security Operations Engineers"
+      ],
+      "requirement_type": "mandatory",
+      "evidence": [
+        "Identity-provider authentication record",
+        "Hardware security key registration record"
+      ]
+    },
+    {
+      "id": "ACCESS-002",
+      "topic": "just_in_time_access",
+      "statement": "Privileged permissions must be granted through an approved just-in-time workflow and must expire automatically at the end of the approved access window.",
+      "maximum_standard_duration_minutes": 240,
+      "approval_required": "Access owner and system owner",
+      "requirement_type": "mandatory",
+      "evidence": [
+        "Access request ticket",
+        "Approval event",
+        "Automatic expiry event"
+      ]
+    },
+    {
+      "id": "ACCESS-003",
+      "topic": "dual_approval",
+      "statement": "Changes affecting identity infrastructure, cryptographic keys, financial reporting systems, or customer data stores require approval from two authorized reviewers before execution.",
+      "approval_roles": [
+        "System owner",
+        "Information Security reviewer"
+      ],
+      "requirement_type": "mandatory",
+      "evidence": [
+        "Change request",
+        "Two independent approval records",
+        "Implementation and validation logs"
+      ]
+    },
+    {
+      "id": "ACCESS-004",
+      "topic": "session_controls",
+      "statement": "Privileged sessions must use managed devices, an approved network path, inactivity timeout, and command-level audit logging where technically supported.",
+      "minimum_controls": [
+        "Managed endpoint",
+        "Approved VPN or zero-trust network path",
+        "15-minute inactivity timeout",
+        "Command or administrative activity logging"
+      ],
+      "requirement_type": "mandatory"
+    },
+    {
+      "id": "ACCESS-005",
+      "topic": "periodic_review",
+      "statement": "Access owners must review privileged access assignments quarterly and remove access that is no longer required.",
+      "review_frequency": "quarterly",
+      "remediation_sla_business_days": 5,
+      "requirement_type": "mandatory",
+      "evidence": [
+        "Quarterly certification record",
+        "Revocation record",
+        "Exception record, if applicable"
+      ]
+    },
+    {
+      "id": "ACCESS-006",
+      "topic": "service_accounts",
+      "statement": "Non-human privileged identities must have a named technical owner, a documented purpose, non-interactive authentication where supported, and a credential rotation schedule.",
+      "credential_rotation_maximum_days": 90,
+      "requirement_type": "mandatory"
+    },
+    {
+      "id": "ACCESS-007",
+      "topic": "logging_and_retention",
+      "statement": "Privileged authentication and administrative activity logs must be protected from unauthorized modification and retained for at least 365 days.",
+      "retention_days": 365,
+      "log_protection": "Write-once or equivalent tamper-evident storage",
+      "requirement_type": "mandatory"
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "EXC-ACCESS-001",
+      "name": "critical_service_break_glass",
+      "trigger": "A declared Severity 1 incident requires immediate privileged action and the normal approval or MFA path is unavailable or would materially delay containment or restoration.",
+      "permitted_deviation": "Break-glass access may temporarily bypass the normal just-in-time approval sequence and phishing-resistant MFA requirement.",
+      "maximum_duration_minutes": 60,
+      "required_controls": [
+        "Incident commander authorization",
+        "Unique emergency account",
+        "Automatic session recording",
+        "Ticket reference recorded before or immediately after activation",
+        "Retrospective review within 24 hours",
+        "Credential rotation immediately after use"
+      ],
+      "prohibited_use": "Break-glass access must not be used for planned maintenance, convenience, testing, or unresolved access-management delays.",
+      "approval_authority": "Incident Commander",
+      "post_event_owner": "Security Operations Manager"
+    },
+    {
+      "id": "EXC-ACCESS-002",
+      "name": "unsupported_legacy_system",
+      "trigger": "A legacy system cannot technically support phishing-resistant MFA or command-level logging.",
+      "permitted_deviation": "The system owner may request a temporary compensating-control exception.",
+      "maximum_duration_days": 90,
+      "required_controls": [
+        "Documented risk assessment",
+        "Security review",
+        "Network isolation",
+        "Session recording where possible",
+        "Migration or retirement plan"
+      ],
+      "approval_authority": "Chief Information Security Officer",
+      "renewal_rule": "Renewal requires a new risk assessment and must not be automatic."
+    }
+  ],
+  "roles_and_responsibilities": [
+    {
+      "role": "Access owner",
+      "responsibilities": [
+        "Validate business need",
+        "Approve standard access requests",
+        "Complete quarterly access certification",
+        "Initiate revocation when access is no longer required"
+      ]
+    },
+    {
+      "role": "System owner",
+      "responsibilities": [
+        "Confirm system criticality",
+        "Approve access to the system",
+        "Verify that implementation matches the approved request"
+      ]
+    },
+    {
+      "role": "Security Operations Manager",
+      "responsibilities": [
+        "Monitor privileged activity",
+        "Review break-glass events",
+        "Track remediation of policy violations"
+      ]
+    },
+    {
+      "role": "Incident Commander",
+      "responsibilities": [
+        "Declare qualifying Severity 1 incidents",
+        "Authorize emergency access when justified",
+        "Ensure emergency actions remain limited to incident response"
+      ]
+    }
+  ],
+  "violations": [
+    {
+      "severity": "high",
+      "examples": [
+        "Using a shared privileged account",
+        "Using break-glass access for planned maintenance",
+        "Failing to revoke expired access"
+      ],
+      "response": "Immediate access suspension, incident investigation, manager notification, and formal remediation plan."
+    },
+    {
+      "severity": "critical",
+      "examples": [
+        "Unauthorized privileged access to customer data",
+        "Deliberate disabling of audit logging",
+        "Repeated bypass of dual approval"
+      ],
+      "response": "Immediate containment, executive and legal notification, forensic investigation, and disciplinary action up to termination."
+    }
+  ],
+  "version_history": [
+    {
+      "version": "1.0",
+      "effective_date": "2025-07-01",
+      "summary": "Introduced mandatory MFA and quarterly privileged-access certification.",
+      "changes": [
+        "MFA was required for human privileged accounts.",
+        "Access reviews were performed quarterly."
+      ]
+    },
+    {
+      "version": "2.0",
+      "effective_date": "2026-07-01",
+      "summary": "Introduced phishing-resistant MFA, just-in-time access, dual approval, and controlled break-glass access.",
+      "changes": [
+        "Added a 240-minute standard access-window maximum.",
+        "Added dual approval for high-impact systems.",
+        "Added a 60-minute emergency break-glass exception.",
+        "Added 365-day tamper-evident log retention."
+      ]
+    }
+  ],
+  "benchmark_questions": [
+    {
+      "id": "Q-001",
+      "question": "What authentication method is mandatory for human privileged accounts under version 2.0?",
+      "answer": "Phishing-resistant MFA is mandatory for all human privileged accounts.",
+      "source_rules": ["ACCESS-001"],
+      "source_sections": ["Privileged Access Controls"],
+      "question_type": "direct_fact",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q-002",
+      "question": "How long may a break-glass session remain active, and what review must occur afterward?",
+      "answer": "A break-glass session may remain active for a maximum of 60 minutes, and a retrospective review must occur within 24 hours.",
+      "source_rules": ["EXC-ACCESS-001"],
+      "source_sections": ["Emergency Access Exception"],
+      "question_type": "exception_and_deadline",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q-003",
+      "question": "A database administrator needs access to a customer data store during a normal maintenance window. What approvals and access controls are required?",
+      "answer": "The administrator must use phishing-resistant MFA, request access through the just-in-time workflow, obtain approval from the access owner and system owner, and use the required managed-device, approved-network, timeout, and logging controls. Because the system stores customer data, two authorized reviewers must approve the change before execution.",
+      "source_rules": ["ACCESS-001", "ACCESS-002", "ACCESS-003", "ACCESS-004"],
+      "source_sections": ["Privileged Access Controls", "High-Impact Change Approval"],
+      "question_type": "multi_hop",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q-004",
+      "question": "Can break-glass access be used when an engineer has not completed the normal access request for planned maintenance?",
+      "answer": "No. Break-glass access is limited to a declared Severity 1 incident where the normal path is unavailable or would materially delay containment or restoration. It cannot be used for planned maintenance, convenience, testing, or unresolved access-management delays.",
+      "source_rules": ["EXC-ACCESS-001"],
+      "source_sections": ["Emergency Access Exception"],
+      "question_type": "negative_exception",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q-005",
+      "question": "What changed between versions 1.0 and 2.0 regarding MFA, access duration, and emergency access?",
+      "answer": "Version 2.0 replaced the general MFA requirement with phishing-resistant MFA, introduced a 240-minute maximum standard access window, and added a controlled break-glass exception limited to 60 minutes with retrospective review.",
+      "source_rules": ["ACCESS-001", "ACCESS-002", "EXC-ACCESS-001"],
+      "source_sections": ["Version History"],
+      "question_type": "version_comparison",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q-006",
+      "question": "What controls apply if a legacy system cannot support phishing-resistant MFA?",
+      "answer": "The system owner must request a temporary compensating-control exception lasting no more than 90 days, supported by a documented risk assessment, security review, network isolation, session recording where possible, and a migration or retirement plan. The CISO must approve it, and renewal is not automatic.",
+      "source_rules": ["EXC-ACCESS-002"],
+      "source_sections": ["Legacy System Exception"],
+      "question_type": "conditional_exception",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q-007",
+      "question": "How long must privileged activity logs be retained, and what storage property is required?",
+      "answer": "Privileged authentication and administrative activity logs must be retained for at least 365 days in write-once or equivalent tamper-evident storage.",
+      "source_rules": ["ACCESS-007"],
+      "source_sections": ["Logging and Evidence Retention"],
+      "question_type": "direct_fact",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q-008",
+      "question": "Who authorizes emergency access and who owns the post-event review?",
+      "answer": "The Incident Commander authorizes qualifying emergency access, and the Security Operations Manager owns the post-event review.",
+      "source_rules": ["EXC-ACCESS-001"],
+      "source_sections": ["Emergency Access Exception", "Roles and Responsibilities"],
+      "question_type": "role_attribution",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q-009",
+      "question": "What is the required remediation period after a quarterly access review identifies unnecessary privilege?",
+      "answer": "The unnecessary access must be removed, with remediation completed within 5 business days.",
+      "source_rules": ["ACCESS-005"],
+      "source_sections": ["Periodic Access Review"],
+      "question_type": "deadline",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q-010",
+      "question": "A service account has no named technical owner but is used by a production workload. Is it compliant?",
+      "answer": "No. Every non-human privileged identity must have a named technical owner, a documented purpose, non-interactive authentication where supported, and a credential rotation schedule.",
+      "source_rules": ["ACCESS-006"],
+      "source_sections": ["Service Account Controls"],
+      "question_type": "compliance_judgment",
+      "difficulty": "medium"
+    }
+  ],
+  "generation_constraints": {
+    "required_sections": [
+      "1. Purpose and Scope",
+      "2. Definitions",
+      "3. Roles and Responsibilities",
+      "4. Privileged Access Controls",
+      "5. Emergency Access Exception",
+      "6. Legacy System Exception",
+      "7. Logging and Evidence Retention",
+      "8. Violations and Enforcement",
+      "9. Version History"
+    ],
+    "required_tables": [
+      "Privileged Access Control Matrix",
+      "Emergency Access Approval Matrix",
+      "Evidence Retention Matrix"
+    ],
+    "style_requirements": [
+      "Formal corporate policy tone",
+      "Precise normative language using must, shall, may, and must not",
+      "Clear distinction between mandatory controls and exceptions",
+      "Cross-reference rule IDs in generated ground truth",
+      "Do not invent facts that are absent from this specification"
+    ]
+  }
+}

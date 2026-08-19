@@ -12,10 +12,8 @@ python-dateutil>=2.9.0
 sentence-transformers>=3.0.0
 chromadb>=0.5.0
 openai>=1.51.0
-requests>=2.32.0
 PyMuPDF>=1.24.0
 pdfplumber>=0.11.0
 python-docx>=1.1.0
 reportlab>=4.0.0
-weasyprint>=62.0
-rank-bm25
+rank-bm25 
